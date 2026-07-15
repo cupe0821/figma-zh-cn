@@ -19,7 +19,10 @@ test("关键累积翻译不会被后续更新覆盖", () => {
     "Change colors": "更改颜色",
     "Add object": "添加对象",
     "Checking for changes": "正在检查更改",
-    "Pasting…": "正在粘贴…"
+    "Pasting…": "正在粘贴…",
+    "Recent chats": "最近对话",
+    "Design next user screen": "设计下一个用户界面",
+    "Create the next screen that follows this one in the user journey.": "创建用户旅程中紧接当前界面的下一个界面。"
   };
   for (const [source, target] of Object.entries(expected)) assert.equal(dictionary[source], target, source);
 });
@@ -37,5 +40,7 @@ test("专业名词与代码内容的保护规则仍存在", () => {
 test("翻译加载器包含防重复和动态界面处理", () => {
   assert.match(runtime, /MutationObserver/);
   assert.match(runtime, /normalize/);
-  assert.equal(Object.keys(dictionary).length, 4337);
+  assert.match(runtime, /value\.trim\(\)===['"]Pen['"].*translated\.trim\(\)===['"]钢笔['"]/s);
+  assert.match(runtime, /white-space['"],['"]nowrap/);
+  assert.equal(Object.keys(dictionary).length, 4340);
 });

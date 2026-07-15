@@ -4335,5 +4335,8 @@
   "Edit this image to include a": "编辑此图像以加入",
   "Attach image as reference": "附加图像作为参考",
   "Change the lighting in this image to be": "将此图像的光照调整为",
-  "Select model": "选择模型"
+  "Select model": "选择模型",
+  "Recent chats": "最近对话",
+  "Design next user screen": "设计下一个用户界面",
+  "Create the next screen that follows this one in the user journey.": "创建用户旅程中紧接当前界面的下一个界面。"
 }

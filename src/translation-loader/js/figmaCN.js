@@ -242,14 +242,22 @@ function lookup(value,node){
   }
   return translated&&translated!==trimmed&&translated!==normalized?leading+translated+trailing:undefined;
 }
+function applyTranslatedText(node,value,translated){
+  if(value.trim()==='Pen'&&translated.trim()==='钢笔'){
+    const element=node.parentElement;
+    element?.style?.setProperty('white-space','nowrap');
+    element?.style?.setProperty('word-break','keep-all');
+  }
+  node.nodeValue=translated;
+}
 function translateNode(node){
   if(!node)return;
-  if(node.nodeType===Node.TEXT_NODE){const value=node.nodeValue;const translated=lookup(value,node);if(translated&&translated!==value)node.nodeValue=translated;return;}
+  if(node.nodeType===Node.TEXT_NODE){const value=node.nodeValue;const translated=lookup(value,node);if(translated&&translated!==value)applyTranslatedText(node,value,translated);return;}
   if(node.nodeType!==Node.ELEMENT_NODE&&node.nodeType!==Node.DOCUMENT_FRAGMENT_NODE)return;
   if(node.nodeType===Node.ELEMENT_NODE){for(const name of attrs){const value=node.getAttribute(name);const translated=value&&lookup(value,node);if(translated&&translated!==value)node.setAttribute(name,translated);}}
   const walker=document.createTreeWalker(node,NodeFilter.SHOW_ELEMENT|NodeFilter.SHOW_TEXT);
   let current;while(current=walker.nextNode()){
-    if(current.nodeType===Node.TEXT_NODE){const value=current.nodeValue;const translated=lookup(value,current);if(translated&&translated!==value)current.nodeValue=translated;}
+    if(current.nodeType===Node.TEXT_NODE){const value=current.nodeValue;const translated=lookup(value,current);if(translated&&translated!==value)applyTranslatedText(current,value,translated);}
     else for(const name of attrs){const value=current.getAttribute(name);const translated=value&&lookup(value,current);if(translated&&translated!==value)current.setAttribute(name,translated);}
   }
 }
