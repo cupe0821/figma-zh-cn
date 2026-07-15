@@ -1,0 +1,79 @@
+name: Build release packages
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag, e.g. v126.6.14-cn.1"
+        required: true
+  push:
+    tags:
+      - "v*-cn.*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15-intel
+            target: macos-x64
+          - os: macos-15
+            target: macos-arm64
+          - os: windows-2025
+            target: windows-x64
+          - os: windows-11-arm
+            target: windows-arm64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --omit=dev
+      - run: npm run validate
+      - run: node scripts/build-release.mjs ${{ matrix.target }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: figma-zh-cn-${{ matrix.target }}
+          path: dist/figma-zh-cn-${{ matrix.target }}
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Create archives and checksums
+        shell: bash
+        run: |
+          mkdir -p release
+          for dir in artifacts/*; do
+            name="$(basename "$dir")"
+            if [[ "$name" == *windows* ]]; then
+              (cd "$dir" && zip -qr "../../release/$name.zip" .)
+            else
+              tar -C "$dir" -czf "release/$name.tar.gz" .
+            fi
+          done
+          (cd release && sha256sum * > SHA256SUMS)
+      - name: Resolve tag
+        id: tag
+        shell: bash
+        run: echo "value=${{ inputs.tag || github.ref_name }}" >> "$GITHUB_OUTPUT"
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh release create "${{ steps.tag.outputs.value }}"
+          release/*
+          --repo "${{ github.repository }}"
+          --title "${{ steps.tag.outputs.value }}"
+          --notes "非官方 Figma 简体中文本地维护包。只包含翻译与补丁工具，不包含 Figma 应用。macOS Intel 已验证；其他平台在实机验收前标记为预览。"

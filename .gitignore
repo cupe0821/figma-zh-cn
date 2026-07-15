@@ -1,0 +1,7 @@
+.DS_Store
+node_modules/
+dist/
+release/*.zip
+release/*.tar.gz
+release/SHA256SUMS
+*.log

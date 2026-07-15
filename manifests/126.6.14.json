@@ -1,0 +1,14 @@
+{
+  "figmaVersion": "126.6.14",
+  "translationVersion": "126.6.14-cn.1",
+  "dictionaryEntries": 4337,
+  "loaderModule": "fg01",
+  "bootstrap": "require(\"fg01\");",
+  "platforms": {
+    "macos-x64": "tested",
+    "macos-arm64": "preview",
+    "windows-x64": "preview",
+    "windows-arm64": "preview"
+  },
+  "notes": "首版以 macOS Intel 实机状态为基线；其余平台发布包使用同一词典和补丁逻辑，需在对应设备继续验收。"
+}
