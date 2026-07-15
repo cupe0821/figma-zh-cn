@@ -29,15 +29,15 @@ jobs:
             target: windows-arm64
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
       - run: npm ci --omit=dev
       - run: npm run validate
       - run: node scripts/build-release.mjs ${{ matrix.target }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: figma-zh-cn-${{ matrix.target }}
           path: dist/figma-zh-cn-${{ matrix.target }}
@@ -47,8 +47,8 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v5
         with:
           path: artifacts
       - name: Create archives and checksums
@@ -60,6 +60,7 @@ jobs:
             if [[ "$name" == *windows* ]]; then
               (cd "$dir" && zip -qr "../../release/$name.zip" .)
             else
+              chmod +x "$dir/runtime/node" "$dir/scripts/figma-zh-cn.mjs" "$dir/scripts/install-macos.command" "$dir/scripts/uninstall-macos.command"
               tar -C "$dir" -czf "release/$name.tar.gz" .
             fi
           done
