@@ -1,6 +1,6 @@
 {
   "figmaVersion": "126.6.14",
-  "translationVersion": "126.6.14-cn.3",
+  "translationVersion": "126.6.14-cn.4",
   "dictionaryEntries": 4461,
   "loaderModule": "fg01",
   "bootstrap": "require(\"fg01\");",
@@ -10,5 +10,5 @@
     "windows-x64": "preview",
     "windows-arm64": "preview"
   },
-  "notes": "macOS Intel 与 Apple Silicon 已在 Figma 126.6.14 实机验证；Windows 发布包使用同一词典和补丁逻辑，需在对应设备继续验收。"
+  "notes": "修复重建 app.asar 后未同步更新尾部大小标记导致 Figma 主动退出的问题；macOS Intel 与 Apple Silicon 已在 Figma 126.6.14 实机验证。"
 }

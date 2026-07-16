@@ -75,59 +75,109 @@ function patchMain(source) {
   return { source: source.replace(strict, `$1${marker}`), changed: true };
 }
 
-function unpackPattern() {
-  return "{**/*.node,assets/cursor-dropper-ui3*.png}";
+function alignPicklePayload(size) {
+  return size + ((4 - (size % 4)) % 4);
 }
 
-function extractAll(original, destination) {
-  const followLinks = process.platform === "win32";
-  fs.mkdirSync(destination, { recursive: true });
+function pickleString(value) {
+  const data = Buffer.from(value, "utf8");
+  const payloadSize = 4 + alignPicklePayload(data.length);
+  const buffer = Buffer.alloc(4 + payloadSize);
+  buffer.writeUInt32LE(payloadSize, 0);
+  buffer.writeUInt32LE(data.length, 4);
+  data.copy(buffer, 8);
+  return buffer;
+}
 
-  for (const fullPath of asar.listPackage(original)) {
-    const filename = fullPath.replace(/^\/+/, "");
-    const output = path.join(destination, filename);
-    const relative = path.relative(destination, output);
-    if (relative.startsWith("..") || path.isAbsolute(relative)) {
-      fail(`归档条目越过目标目录：${fullPath}`);
-    }
+function pickleUInt32(value) {
+  const buffer = Buffer.alloc(8);
+  buffer.writeUInt32LE(4, 0);
+  buffer.writeUInt32LE(value, 4);
+  return buffer;
+}
 
-    const entry = asar.statFile(original, filename, followLinks);
-    if ("files" in entry) {
-      fs.mkdirSync(output, { recursive: true });
-      continue;
-    }
+function expectedSizeTrailer(size) {
+  const encoded = (size - 8).toString(36);
+  if (size < 8 || encoded.length > 8) fail(`ASAR 文件大小无法编码：${size}`);
+  return encoded.padStart(8, "0");
+}
 
-    if ("link" in entry) {
-      const target = path.join(destination, entry.link);
-      const link = path.relative(path.dirname(output), target);
-      const targetRelative = path.relative(destination, target);
-      if (targetRelative.startsWith("..") || path.isAbsolute(targetRelative)) {
-        fail(`归档链接越过目标目录：${fullPath}`);
-      }
-      fs.rmSync(output, { force: true });
-      fs.symlinkSync(link, output);
-      continue;
-    }
+function assertSizeTrailer(archive) {
+  const actual = archive.subarray(-8).toString("ascii");
+  const expected = expectedSizeTrailer(archive.length);
+  if (actual !== expected) fail(`ASAR 尾部大小标记无效：应为 ${expected}，实际为 ${actual}`);
+}
 
-    // Figma adds this non-standard sentinel to the ASAR header. Its declared
-    // size is -1000 and it has no payload, so @electron/asar cannot extract it.
-    if (filename === ".codesign" && entry.size < 0) continue;
-    if (entry.size < 0) fail(`归档条目大小无效：${fullPath} (${entry.size})`);
+function updateSizeTrailer(archive) {
+  archive.write(expectedSizeTrailer(archive.length), archive.length - 8, 8, "ascii");
+}
 
-    fs.mkdirSync(path.dirname(output), { recursive: true });
-    fs.writeFileSync(output, asar.extractFile(original, filename, followLinks));
-    if (entry.executable) fs.chmodSync(output, 0o755);
+function headerEntry(header, filename) {
+  let entry = header;
+  for (const part of filename.split(/[\\/]/).filter(Boolean)) {
+    entry = entry.files?.[part];
+    if (!entry) fail(`ASAR 头中找不到入口：${filename}`);
+  }
+  return entry;
+}
+
+function updateIntegrity(entry, content) {
+  const blockSize = entry.integrity?.blockSize || 4 * 1024 * 1024;
+  const hash = (buffer) => crypto.createHash("sha256").update(buffer).digest("hex");
+  const blocks = [];
+  for (let offset = 0; offset < content.length; offset += blockSize) {
+    blocks.push(hash(content.subarray(offset, Math.min(offset + blockSize, content.length))));
+  }
+  entry.integrity = { algorithm: "SHA256", hash: hash(content), blockSize, blocks };
+}
+
+function shiftOffsets(entry, after, delta) {
+  if (entry.files) {
+    for (const child of Object.values(entry.files)) shiftOffsets(child, after, delta);
+  } else if (typeof entry.offset === "string" && BigInt(entry.offset) > after) {
+    entry.offset = (BigInt(entry.offset) + BigInt(delta)).toString();
   }
 }
 
-async function rebuildAsar(original, mainPath, patchedMain) {
+function rebuildAsar(original, mainPath, patchedMain) {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "figma-zh-cn-"));
-  const extracted = path.join(tempRoot, "app");
   const output = path.join(tempRoot, "app.asar");
   try {
-    extractAll(original, extracted);
-    fs.writeFileSync(path.join(extracted, mainPath), patchedMain);
-    await asar.createPackageWithOptions(extracted, output, { unpack: unpackPattern() });
+    const raw = asar.getRawHeader(original);
+    const mainEntry = headerEntry(raw.header, mainPath);
+    if (typeof mainEntry.offset !== "string" || mainEntry.size < 0 || mainEntry.unpacked) {
+      fail(`Figma 主入口不是可原位更新的打包文件：${mainPath}`);
+    }
+
+    const patched = Buffer.from(patchedMain, "utf8");
+    const oldSize = mainEntry.size;
+    const delta = patched.length - oldSize;
+    const mainOffset = BigInt(mainEntry.offset);
+    mainEntry.size = patched.length;
+    updateIntegrity(mainEntry, patched);
+    if (delta !== 0) shiftOffsets(raw.header, mainOffset, delta);
+
+    const archive = fs.readFileSync(original);
+    assertSizeTrailer(archive);
+    const payload = archive.subarray(8 + raw.headerSize);
+    const start = Number(mainOffset);
+    if (!Number.isSafeInteger(start) || start + oldSize > payload.length) {
+      fail(`Figma 主入口偏移无效：${mainPath}`);
+    }
+    const rebuiltPayload = Buffer.concat([
+      payload.subarray(0, start),
+      patched,
+      payload.subarray(start + oldSize)
+    ]);
+    const headerBuffer = pickleString(JSON.stringify(raw.header));
+    const sizeBuffer = pickleUInt32(headerBuffer.length);
+    const rebuiltArchive = Buffer.concat([sizeBuffer, headerBuffer, rebuiltPayload]);
+    updateSizeTrailer(rebuiltArchive);
+    fs.writeFileSync(output, rebuiltArchive);
+    asar.uncache(output);
+
+    const verified = readAppInfo(output);
+    if (verified.main !== patchedMain) fail("重建后主入口内容校验失败。");
     return { tempRoot, output };
   } catch (error) {
     fs.rmSync(tempRoot, { recursive: true, force: true });
