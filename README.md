@@ -97,7 +97,7 @@ npm run uninstall:local
 2. 更新 `package.json` 版本和 `manifests/source-lock.json`。
 3. 本地及 GitHub Actions 校验通过。
 4. 创建标签，例如 `v126.6.14-cn.1`。
-5. `release.yml` 在对应平台 runner 上打包本地维护工具并发布 SHA-256。
+5. `release.yml` 在对应平台 runner 上打包本地维护工具、发布 SHA-256，并在 Release 页面生成从上一版本到当前版本的更新说明。
 
 ## 许可与免责声明
 
