@@ -261,6 +261,10 @@ async function install(resources) {
       tempRoot = rebuilt.tempRoot;
       const staged = `${appAsar}.figma-zh-cn-new`;
       fs.copyFileSync(rebuilt.output, staged);
+      if (process.platform === "win32") {
+        fs.rmSync(appAsar, { force: true });
+        appAsarReplaced = true;
+      }
       fs.renameSync(staged, appAsar);
       appAsarReplaced = true;
       asar.uncache(appAsar);

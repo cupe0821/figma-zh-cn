@@ -31,6 +31,8 @@ test("补丁器原位更新主入口并保留官方 ASAR 布局", () => {
   assert.match(patcher, /shiftOffsets\(raw\.header, mainOffset, delta\)/);
   assert.match(patcher, /const rebuiltPayload = Buffer\.concat/);
   assert.match(patcher, /updateSizeTrailer\(rebuiltArchive\)/);
+  assert.match(patcher, /process\.platform === "win32"/);
+  assert.match(patcher, /fs\.rmSync\(appAsar, \{ force: true \}\)/);
   assert.match(patcher, /asar\.uncache\(appAsar\)/);
   assert.doesNotMatch(patcher, /asar\.extractAll\(/);
   assert.doesNotMatch(patcher, /asar\.createPackageWithOptions\(/);
