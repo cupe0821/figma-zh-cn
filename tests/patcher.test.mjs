@@ -31,10 +31,15 @@ async function createTestArchive(main) {
   fs.writeFileSync(path.join(source, "main.js"), main);
   await asar.createPackage(source, appAsar);
 
+  // Release @electron/asar's archive cache before replacing the file. Windows
+  // otherwise keeps the freshly-created archive handle alive while the custom
+  // Figma size trailer is appended, and a child process can observe bad offsets.
+  asar.uncache(appAsar);
   const original = fs.readFileSync(appAsar);
   const withTrailer = Buffer.concat([original, Buffer.alloc(8)]);
   withTrailer.write((withTrailer.length - 8).toString(36).padStart(8, "0"), withTrailer.length - 8, 8, "ascii");
   fs.writeFileSync(appAsar, withTrailer);
+  asar.uncache(appAsar);
   return { temp, resources, appAsar };
 }
 
