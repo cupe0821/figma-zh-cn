@@ -19,8 +19,8 @@ for (const [relative, expected] of Object.entries(lock.files)) {
   if (actual !== expected) failures.push(`文件未经 source-lock 确认：${relative}`);
 }
 
-if (Object.keys(dictionary).length !== 4340) {
-  failures.push(`词典条目应为 4340，实际为 ${Object.keys(dictionary).length}`);
+if (Object.keys(dictionary).length !== 4461) {
+  failures.push(`词典条目应为 4461，实际为 ${Object.keys(dictionary).length}`);
 }
 
 const forbidden = [];
