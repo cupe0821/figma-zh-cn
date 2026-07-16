@@ -12,6 +12,8 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(here, "..");
 const loaderSource = path.join(projectRoot, "src", "translation-loader");
 const marker = 'require("fg01");';
+const nativeMenuHook = "global.fgmm";
+const nativeStringsHook = "global.fgml";
 const stateRoot = path.join(os.homedir(), ".figma-zh-cn");
 const backupRoot = path.join(stateRoot, "backups");
 
@@ -68,11 +70,74 @@ function readAppInfo(appAsar) {
   return { version: pkg.version || "unknown", mainPath, main };
 }
 
+function countMatches(source, pattern) {
+  return (source.match(pattern) || []).length;
+}
+
+function replaceExactlyOnce(source, pattern, replacement, description) {
+  const flags = pattern.flags.includes("g") ? pattern.flags : `${pattern.flags}g`;
+  const matches = source.match(new RegExp(pattern.source, flags)) || [];
+  if (matches.length !== 1) {
+    fail(`Figma 主入口结构与已知版本不一致：${description}应匹配 1 处，实际 ${matches.length} 处。已停止，未写入任何文件。`);
+  }
+  return source.replace(pattern, replacement);
+}
+
+function assertTranslationHooks(source) {
+  const menuCalls = countMatches(source, /(?:global\.)?fgmm\(/g);
+  const stringCalls = countMatches(source, /(?:global\.)?fgml\(/g);
+  if (menuCalls !== 3 || stringCalls !== 1) {
+    fail(`原生翻译调用校验失败：菜单应为 3 处、桌面字符串应为 1 处，实际为 ${menuCalls} 处和 ${stringCalls} 处。`);
+  }
+}
+
 function patchMain(source) {
-  if (source.includes(marker) || source.includes("require('fg01');")) return { source, changed: false };
-  const strict = /^(?:\uFEFF)?(["']use strict["'];?)/;
-  if (!strict.test(source)) fail("Figma 主入口结构与已知版本不一致，已停止，未写入任何文件。");
-  return { source: source.replace(strict, `$1${marker}`), changed: true };
+  let patched = source;
+  const hasLoader = patched.includes(marker) || patched.includes("require('fg01');");
+  if (!hasLoader) {
+    const strict = /^(?:\uFEFF)?(["']use strict["'];?)/;
+    if (!strict.test(patched)) fail("Figma 主入口结构与已知版本不一致，已停止，未写入任何文件。");
+    patched = patched.replace(strict, `$1${marker}`);
+  }
+
+  const existingMenuCalls = countMatches(patched, /(?:global\.)?fgmm\(/g);
+  if (existingMenuCalls === 0) {
+    patched = replaceExactlyOnce(
+      patched,
+      /(rebuildMenus\(\)\{switch\(this\.template\.type\)\{case"default":\{[\s\S]{0,300}?\.Menu\.buildFromTemplate\()([\w$]+)(\)\),this\.rebuildWindowsAppMenu\(\[\]\))/,
+      `$1${nativeMenuHook}($2)$3`,
+      "默认菜单翻译调用",
+    );
+    patched = replaceExactlyOnce(
+      patched,
+      /(case"fullscreen":\{[\s\S]{0,300}?\.Menu\.buildFromTemplate\()([\w$]+)(\);[\w$]+\.Menu\.setApplicationMenu\()/,
+      `$1${nativeMenuHook}($2)$3`,
+      "全屏菜单翻译调用",
+    );
+    patched = replaceExactlyOnce(
+      patched,
+      /(rebuildWindowsAppMenu\([^)]*\)\{process\.platform==="win32"&&\(this\.windowsAppMenu=[\w$]+\.Menu\.buildFromTemplate\()([\s\S]{1,500}?)(\)\)\}updateActionState\()/,
+      `$1${nativeMenuHook}($2)$3`,
+      "Windows 菜单翻译调用",
+    );
+  } else if (existingMenuCalls !== 3) {
+    fail(`Figma 主入口含有不完整的菜单翻译调用：应为 3 处，实际 ${existingMenuCalls} 处。已停止，未写入任何文件。`);
+  }
+
+  const existingStringCalls = countMatches(patched, /(?:global\.)?fgml\(/g);
+  if (existingStringCalls === 0) {
+    patched = replaceExactlyOnce(
+      patched,
+      /(var [\w$]+=[\w$]+\.create\("i18n"\),[\w$]+=)(\{\.\.\.[\w$]+(?:,\.\.\.[\w$]+){4}\})(,[\w$]+=\["desktop\.shell_app\.","desktop\.shell\.app\."\])/,
+      `$1${nativeStringsHook}($2)$3`,
+      "桌面字符串翻译调用",
+    );
+  } else if (existingStringCalls !== 1) {
+    fail(`Figma 主入口含有不完整的桌面字符串翻译调用：应为 1 处，实际 ${existingStringCalls} 处。已停止，未写入任何文件。`);
+  }
+
+  assertTranslationHooks(patched);
+  return { source: patched, changed: patched !== source };
 }
 
 function alignPicklePayload(size) {
@@ -273,6 +338,7 @@ async function install(resources) {
     const loader = copyLoader(resources);
     const after = readAppInfo(appAsar);
     if (!after.main.includes(marker)) fail("安装后自检失败：启动标记不存在。");
+    assertTranslationHooks(after.main);
     console.log(`已安装：Figma ${after.version}`);
     console.log(`中文加载器：${loader}`);
     console.log(`原始备份：${backup.backupAsar}`);

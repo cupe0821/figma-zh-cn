@@ -1,6 +1,6 @@
 {
   "figmaVersion": "126.6.14",
-  "translationVersion": "126.6.14-cn.4",
+  "translationVersion": "126.6.14-cn.5",
   "dictionaryEntries": 4461,
   "loaderModule": "fg01",
   "bootstrap": "require(\"fg01\");",
@@ -10,5 +10,5 @@
     "windows-x64": "preview",
     "windows-arm64": "preview"
   },
-  "notes": "修复重建 app.asar 后未同步更新尾部大小标记导致 Figma 主动退出的问题；macOS Intel 与 Apple Silicon 已在 Figma 126.6.14 实机验证。"
+  "notes": "恢复来源版本中的 3 处原生菜单翻译调用和 1 处桌面字符串翻译调用；支持从 cn.4 直接补齐缺失调用，并保留 ASAR 尾部大小标记修复。macOS 改用稳定本地指定要求，避免后续中文包升级随内容产生新的钥匙串身份。macOS Intel 与 Apple Silicon 已在 Figma 126.6.14 实机验证。"
 }
