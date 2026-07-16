@@ -79,12 +79,53 @@ function unpackPattern() {
   return "{**/*.node,assets/cursor-dropper-ui3*.png}";
 }
 
+function extractAll(original, destination) {
+  const followLinks = process.platform === "win32";
+  fs.mkdirSync(destination, { recursive: true });
+
+  for (const fullPath of asar.listPackage(original)) {
+    const filename = fullPath.replace(/^\/+/, "");
+    const output = path.join(destination, filename);
+    const relative = path.relative(destination, output);
+    if (relative.startsWith("..") || path.isAbsolute(relative)) {
+      fail(`归档条目越过目标目录：${fullPath}`);
+    }
+
+    const entry = asar.statFile(original, filename, followLinks);
+    if ("files" in entry) {
+      fs.mkdirSync(output, { recursive: true });
+      continue;
+    }
+
+    if ("link" in entry) {
+      const target = path.join(destination, entry.link);
+      const link = path.relative(path.dirname(output), target);
+      const targetRelative = path.relative(destination, target);
+      if (targetRelative.startsWith("..") || path.isAbsolute(targetRelative)) {
+        fail(`归档链接越过目标目录：${fullPath}`);
+      }
+      fs.rmSync(output, { force: true });
+      fs.symlinkSync(link, output);
+      continue;
+    }
+
+    // Figma adds this non-standard sentinel to the ASAR header. Its declared
+    // size is -1000 and it has no payload, so @electron/asar cannot extract it.
+    if (filename === ".codesign" && entry.size < 0) continue;
+    if (entry.size < 0) fail(`归档条目大小无效：${fullPath} (${entry.size})`);
+
+    fs.mkdirSync(path.dirname(output), { recursive: true });
+    fs.writeFileSync(output, asar.extractFile(original, filename, followLinks));
+    if (entry.executable) fs.chmodSync(output, 0o755);
+  }
+}
+
 async function rebuildAsar(original, mainPath, patchedMain) {
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "figma-zh-cn-"));
   const extracted = path.join(tempRoot, "app");
   const output = path.join(tempRoot, "app.asar");
   try {
-    asar.extractAll(original, extracted);
+    extractAll(original, extracted);
     fs.writeFileSync(path.join(extracted, mainPath), patchedMain);
     await asar.createPackageWithOptions(extracted, output, { unpack: unpackPattern() });
     return { tempRoot, output };
@@ -131,20 +172,50 @@ function copyLoader(resources) {
   return target;
 }
 
+function assertResourcesWritable(resources) {
+  const probe = path.join(resources, `.figma-zh-cn-write-test-${process.pid}`);
+  try {
+    fs.writeFileSync(probe, "");
+    fs.rmSync(probe, { force: true });
+  } catch (error) {
+    try {
+      fs.rmSync(probe, { force: true });
+    } catch {}
+    const hint = process.platform === "darwin"
+      ? "请在“系统设置 → 隐私与安全性 → App 管理”中允许当前终端修改应用，然后重试。"
+      : "请确认当前用户可以修改 Figma 安装目录后重试。";
+    throw new Error(`无法写入 Figma Resources（${error.code || error.message}）。${hint}`);
+  }
+}
+
+function restoreLoader(resources, backup) {
+  const target = path.join(resources, "node_modules", "fg01");
+  const saved = path.join(path.dirname(backup.backupAsar), "fg01");
+  fs.rmSync(target, { recursive: true, force: true });
+  if (fs.existsSync(saved)) fs.cpSync(saved, target, { recursive: true });
+}
+
 async function install(resources) {
   const appAsar = path.join(resources, "app.asar");
-  const before = readAppInfo(appAsar);
-  const patch = patchMain(before.main);
-  const backup = createBackup(resources, appAsar, before);
+  let backup;
   let tempRoot;
+  let appAsarReplaced = false;
+  let loaderTouched = false;
   try {
+    assertResourcesWritable(resources);
+    const before = readAppInfo(appAsar);
+    const patch = patchMain(before.main);
+    backup = createBackup(resources, appAsar, before);
     if (patch.changed) {
       const rebuilt = await rebuildAsar(appAsar, before.mainPath, patch.source);
       tempRoot = rebuilt.tempRoot;
       const staged = `${appAsar}.figma-zh-cn-new`;
       fs.copyFileSync(rebuilt.output, staged);
       fs.renameSync(staged, appAsar);
+      appAsarReplaced = true;
+      asar.uncache(appAsar);
     }
+    loaderTouched = true;
     const loader = copyLoader(resources);
     const after = readAppInfo(appAsar);
     if (!after.main.includes(marker)) fail("安装后自检失败：启动标记不存在。");
@@ -153,8 +224,26 @@ async function install(resources) {
     console.log(`原始备份：${backup.backupAsar}`);
     console.log(`当前 app.asar SHA-256：${sha256(appAsar)}`);
   } catch (error) {
-    fs.copyFileSync(backup.backupAsar, appAsar);
-    console.error("安装失败，已自动恢复原始 app.asar。", error.message);
+    let rollbackError;
+    if (backup && (appAsarReplaced || loaderTouched)) {
+      try {
+        if (appAsarReplaced) {
+          fs.copyFileSync(backup.backupAsar, appAsar);
+          asar.uncache(appAsar);
+        }
+        if (loaderTouched) restoreLoader(resources, backup);
+      } catch (rollback) {
+        rollbackError = rollback;
+      }
+    }
+    if (rollbackError) {
+      console.error(`安装失败，自动恢复也失败：${rollbackError.message}`);
+      console.error(`原始备份：${backup.backupAsar}`);
+    } else if (backup && (appAsarReplaced || loaderTouched)) {
+      console.error("安装失败，已自动恢复原始文件。", error.message);
+    } else {
+      console.error("安装失败，未修改 Figma。", error.message);
+    }
     process.exitCode = 1;
   } finally {
     if (tempRoot) fs.rmSync(tempRoot, { recursive: true, force: true });
