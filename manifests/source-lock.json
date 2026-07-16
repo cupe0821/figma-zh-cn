@@ -1,5 +1,5 @@
 {
-  "version": "126.6.14-cn.2",
+  "version": "126.6.14-cn.3",
   "files": {
     "src/translation-loader/index.js": "c7d195960ff0693b58113dbdb224b8effae8f9fabb53e5baee6e28c64b15d447",
     "src/translation-loader/package.json": "9d1967d7d16a7cebbc6130bdd0e82fb9e125db79da083e18da6547f96e3420f1",
