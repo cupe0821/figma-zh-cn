@@ -20,25 +20,50 @@ function representativeFigmaMain({ loader = false } = {}) {
   ].join("");
 }
 
-async function createTestArchive(main) {
+function pickleUInt32(value) {
+  const buffer = Buffer.alloc(8);
+  buffer.writeUInt32LE(4, 0);
+  buffer.writeUInt32LE(value, 4);
+  return buffer;
+}
+
+function pickleString(value) {
+  const data = Buffer.from(value, "utf8");
+  const alignedLength = (data.length + 3) & ~3;
+  const buffer = Buffer.alloc(8 + alignedLength);
+  buffer.writeUInt32LE(4 + alignedLength, 0);
+  buffer.writeUInt32LE(data.length, 4);
+  data.copy(buffer, 8);
+  return buffer;
+}
+
+function createTestArchive(main) {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), "figma-zh-cn-test-"));
-  const source = path.join(temp, "source");
   const resources = path.join(temp, "Resources");
   const appAsar = path.join(resources, "app.asar");
-  fs.mkdirSync(source, { recursive: true });
   fs.mkdirSync(resources, { recursive: true });
-  fs.writeFileSync(path.join(source, "package.json"), JSON.stringify({ version: "test", main: "main.js" }));
-  fs.writeFileSync(path.join(source, "main.js"), main);
-  await asar.createPackage(source, appAsar);
 
-  // Release @electron/asar's archive cache before replacing the file. Windows
-  // otherwise keeps the freshly-created archive handle alive while the custom
-  // Figma size trailer is appended, and a child process can observe bad offsets.
-  asar.uncache(appAsar);
-  const original = fs.readFileSync(appAsar);
-  const withTrailer = Buffer.concat([original, Buffer.alloc(8)]);
-  withTrailer.write((withTrailer.length - 8).toString(36).padStart(8, "0"), withTrailer.length - 8, 8, "ascii");
-  fs.writeFileSync(appAsar, withTrailer);
+  // Build the tiny fixture directly in the same ASAR layout used by Figma.
+  // @electron/asar.createPackage followed by appending Figma's custom 8-byte
+  // size trailer can produce stale header offsets on Windows CI.
+  const packageData = Buffer.from(JSON.stringify({ version: "test", main: "main.js" }), "utf8");
+  const mainData = Buffer.from(main, "utf8");
+  const header = {
+    files: {
+      "package.json": { size: packageData.length, offset: "0" },
+      "main.js": { size: mainData.length, offset: String(packageData.length) }
+    }
+  };
+  const headerBuffer = pickleString(JSON.stringify(header));
+  const sizeBuffer = pickleUInt32(headerBuffer.length);
+  const archive = Buffer.concat([sizeBuffer, headerBuffer, packageData, mainData, Buffer.alloc(8)]);
+  archive.write((archive.length - 8).toString(36).padStart(8, "0"), archive.length - 8, 8, "ascii");
+  fs.writeFileSync(appAsar, archive);
+
+  assert.deepEqual(JSON.parse(asar.extractFile(appAsar, "package.json").toString("utf8")), {
+    version: "test",
+    main: "main.js"
+  });
   asar.uncache(appAsar);
   return { temp, resources, appAsar };
 }
