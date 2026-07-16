@@ -28,7 +28,7 @@ Object.assign(map,{
   "Min width":"最小宽度","Max width":"最大宽度","Min height":"最小高度","Max height":"最大高度","Width mode":"宽度模式","Height mode":"高度模式",
   "Add images and files":"添加图像和文件","Attach Figma file":"附加 Figma 文件","Web search":"网页搜索","Skills":"技能",
   "Chats":"对话","Chat access":"对话访问权限","Delete chat":"删除对话","Shared chat":"共享对话","Available to all file editors":"所有文件编辑者均可访问","Private chat":"私密对话","Only you can access":"仅您可访问","Copy link to chat":"复制对话链接","Close agents panel":"关闭智能体面板","Open agents panel":"打开智能体面板","Make your existing chats private":"将现有对话设为私密",
-  "Timing":"计时","Cosmic Orange":"宇宙橙","Deep Blue":"深蓝色",
+  "Timing":"计时","Cosmic Orange":"星宇橙色","Deep Blue":"深蓝色",
   "Motion":"动画","Timeline":"时间轴","Animation timeline":"动画时间轴","Open timeline":"打开时间轴","Close timeline":"关闭时间轴","Show timeline":"显示时间轴","Hide timeline":"隐藏时间轴",
   "Auto-keyframe":"自动关键帧","Turn on auto-keyframe":"开启自动关键帧","Turn off auto-keyframe":"关闭自动关键帧","Previous keyframe":"上一个关键帧","Next keyframe":"下一个关键帧","Add keyframe":"添加关键帧","Delete keyframe":"删除关键帧","Remove keyframe":"移除关键帧",
   "Turn on animation visibility":"开启动画可见性","Turn off animation visibility":"关闭动画可见性","Show animation":"显示动画","Hide animation":"隐藏动画","Play animation":"播放动画","Pause animation":"暂停动画","Loop playback":"循环播放","Rewind":"回到开头","Go to start":"转到开头","Go to end":"转到结尾",
@@ -52,6 +52,14 @@ const generatedLayerMap={frame:'画框',rectangle:'矩形',ellipse:'椭圆',poly
 const fontWeightNames=new Set(['thin','hairline','extra light','ultra light','light','book','regular','roman','normal','medium','semi bold','semibold','demi bold','demibold','bold','extra bold','extrabold','ultra bold','heavy','black','extra black','italic','oblique','bold italic']);
 const colorSpaceNames=new Set(['rgb','cmyk','bw light','bw dark','srgb','linear','oklab','lab','lch','oklch','display p3','p3','hsl','hsv','hsb']);
 const shaderQualityNames=new Set(['low','medium','high']);
+const iphoneDeviceColorTranslations={black:'黑色',white:'白色'};
+const themeOptionTranslations={dark:'黑色',light:'浅色'};
+const iphoneDeviceColorPaletteSignatures=[
+  [['lavender','薰衣草紫色'],['sage','鼠尾草绿色'],['mist blue','青雾蓝色']],
+  [['pink','粉色'],['teal','深青色'],['ultramarine','群青色']],
+  [['blue','蓝色'],['green','绿色'],['pink','粉色'],['yellow','黄色']],
+  [['black','黑色'],['white','白色']]
+];
 const compareListParameterNames=new Set([
   'fill type','opacity','color stop 1','color stop 2','color','x','y','blur','spread','fill','blend mode','visibility','effect type',
   'position','width','height','rotation','corner radius','radius','layer type','constraints','horizontal constraint','vertical constraint',
@@ -97,6 +105,56 @@ function isFontWeightContext(element,normalized){
     if(fontWeightNames.has(label))weights.add(label);
   }
   if(weights.size>=2)return true;
+  return false;
+}
+function isIPhoneDeviceColorContext(element,normalized){
+  const color=normalized.toLocaleLowerCase('en-US');
+  if(!element||!iphoneDeviceColorTranslations[color])return false;
+  let container=element;
+  for(let depth=0;container&&depth<9;depth++,container=container.parentElement){
+    const text=(container.textContent||'').trim().replace(/\s+/g,' ').toLocaleLowerCase('en-US');
+    if(!text||text.length>500)continue;
+    const matches=iphoneDeviceColorPaletteSignatures.some((signature)=>signature.every((variants)=>variants.some((label)=>text.includes(label))));
+    if(matches)return true;
+  }
+  return false;
+}
+function isThemeOptionContext(element,normalized){
+  if(!element||!themeOptionTranslations[normalized.toLocaleLowerCase('en-US')])return false;
+  let container=element;
+  for(let depth=0;container&&depth<9;depth++,container=container.parentElement){
+    const text=(container.textContent||'').trim().replace(/\s+/g,' ').toLocaleLowerCase('en-US');
+    if(!text||text.length>300)continue;
+    const hasLight=text.includes('light')||text.includes('浅色');
+    const hasDark=text.includes('dark')||text.includes('深色');
+    const hasSystem=text.includes('system theme')||text.includes('系统主题');
+    if(hasLight&&hasDark&&hasSystem)return true;
+  }
+  return false;
+}
+function isAccountThemeContext(element,normalized){
+  if(!element||!themeOptionTranslations[normalized.toLocaleLowerCase('en-US')])return false;
+  let container=element;
+  for(let depth=0;container&&depth<9;depth++,container=container.parentElement){
+    const text=(container.textContent||'').trim().replace(/\s+/g,' ').toLocaleLowerCase('en-US');
+    if(!text||text.length>800)continue;
+    const hasTheme=text.includes('theme')||text.includes('主题');
+    const hasContrast=text.includes('enhance contrast')||text.includes('增强对比度');
+    if(hasTheme&&hasContrast)return true;
+  }
+  return false;
+}
+function isLibraryModeNameContext(element,normalized){
+  const name=normalized.toLocaleLowerCase('en-US');
+  if(!element||(name!=='dark'&&name!=='light'))return false;
+  let container=element;
+  for(let depth=0;container&&depth<9;depth++,container=container.parentElement){
+    const text=(container.textContent||'').trim().replace(/\s+/g,' ').toLocaleLowerCase('en-US');
+    if(!text||text.length>300)continue;
+    const hasAuto=/(?:auto|自动)\s*[\(（][^)）]+[\)）]/i.test(text);
+    const hasMode=/(?:^|\s)(?:mode|模式)(?:\s|$)/i.test(text);
+    if(hasAuto&&hasMode)return true;
+  }
   return false;
 }
 function isBlendModeNormalContext(element,normalized){
@@ -172,14 +230,21 @@ function lookup(value,node){
   const leading=value.match(/^\s*/)?.[0]??'',trailing=value.match(/\s*$/)?.[0]??'',trimmed=value.trim(),normalized=trimmed.replace(/[\u200B-\u200F\u2060\uFEFF]/g,'').replace(/\s+/g,' ');
   const element=node?.nodeType===Node.ELEMENT_NODE?node:node?.parentElement;
   const blendModeNormal=isBlendModeNormalContext(element,normalized);
+  const iphoneDeviceColor=isIPhoneDeviceColorContext(element,normalized);
+  const themeOption=isThemeOptionContext(element,normalized)||isAccountThemeContext(element,normalized);
+  const libraryModeName=isLibraryModeNameContext(element,normalized);
+  const ambiguousThemeName=normalized.toLocaleLowerCase('en-US')==='dark'||normalized.toLocaleLowerCase('en-US')==='light';
   const relativeTime=/^\d+\s+(?:seconds?|minutes?|hours?|days?|weeks?|months?|years?)\s+ago$/i.test(normalized)||/^\d+\s*[smhdw]\s+ago$/i.test(normalized);
   if(isCompareListParameterContext(element,normalized))return undefined;
   if(isCodeSyntaxContext(element)&&!blendModeNormal&&!relativeTime)return undefined;
+  if(libraryModeName||ambiguousThemeName&&!themeOption)return undefined;
   const shaderQuality=shaderQualityNames.has(normalized.toLocaleLowerCase('en-US'))&&(element?.closest?.(shaderPanelSelector)||isShaderQualityPopup(element,normalized));
-  if(!blendModeNormal&&!shaderQuality&&isFontWeightContext(element,normalized))return undefined;
+  if(!blendModeNormal&&!shaderQuality&&!iphoneDeviceColor&&!themeOption&&isFontWeightContext(element,normalized))return undefined;
   if(isColorSpaceContext(element,normalized))return undefined;
   let translated=map[trimmed]??map[normalized]??ciMap.get(trimmed.toLocaleLowerCase('en-US'))??ciMap.get(normalized.toLocaleLowerCase('en-US'));
   if(blendModeNormal)translated='正常';
+  if(iphoneDeviceColor)translated=iphoneDeviceColorTranslations[normalized.toLocaleLowerCase('en-US')];
+  if(themeOption)translated=themeOptionTranslations[normalized.toLocaleLowerCase('en-US')];
   if(translated===trimmed||translated===normalized)translated=undefined;
   if(element?.closest?.(shaderPanelSelector)&&shaderOnlyMap[normalized])translated=shaderOnlyMap[normalized];
   if(!translated){
@@ -207,6 +272,8 @@ function lookup(value,node){
     else if(match=normalized.match(/^Component instance(\s*\(.+\))$/i))translated=`组件实例${match[1]}`;
     else if(match=normalized.match(/^(\d+)\s+layers?$/i))translated=`${match[1]} 个图层`;
     else if(match=normalized.match(/^(\d+)\s+of\s+(\d+)$/i))translated=`${match[1]} / ${match[2]}`;
+    else if(match=normalized.match(/^Step\s+(\d+)\s+of\s+(\d+)$/i))translated=`第 ${match[1]} 步，共 ${match[2]} 步`;
+    else if(match=normalized.match(/^Auto\s*\((.+)\)$/i))translated=`自动（${match[1]}）`;
     else if(match=normalized.match(/^Turn (on|off) auto-keyframe(?:\s+(.+))?$/i))translated=`${match[1].toLowerCase()==='on'?'开启':'关闭'}自动关键帧${match[2]?` ${match[2]}`:''}`;
     else if(match=normalized.match(/^([\d,.]+)\s+credits?\s+left$/i))translated=`剩余 ${match[1]} 点额度`;
     else if(match=normalized.match(/^Edited\s+(.+)$/i))translated=`编辑于 ${localizeRelativeTime(match[1])??match[1]}`;
@@ -242,14 +309,22 @@ function lookup(value,node){
   }
   return translated&&translated!==trimmed&&translated!==normalized?leading+translated+trailing:undefined;
 }
+function applyTranslatedText(node,value,translated){
+  if(value.trim()==='Pen'&&translated.trim()==='钢笔'){
+    const element=node.parentElement;
+    element?.style?.setProperty('white-space','nowrap');
+    element?.style?.setProperty('word-break','keep-all');
+  }
+  node.nodeValue=translated;
+}
 function translateNode(node){
   if(!node)return;
-  if(node.nodeType===Node.TEXT_NODE){const value=node.nodeValue;const translated=lookup(value,node);if(translated&&translated!==value)node.nodeValue=translated;return;}
+  if(node.nodeType===Node.TEXT_NODE){const value=node.nodeValue;const translated=lookup(value,node);if(translated&&translated!==value)applyTranslatedText(node,value,translated);return;}
   if(node.nodeType!==Node.ELEMENT_NODE&&node.nodeType!==Node.DOCUMENT_FRAGMENT_NODE)return;
   if(node.nodeType===Node.ELEMENT_NODE){for(const name of attrs){const value=node.getAttribute(name);const translated=value&&lookup(value,node);if(translated&&translated!==value)node.setAttribute(name,translated);}}
   const walker=document.createTreeWalker(node,NodeFilter.SHOW_ELEMENT|NodeFilter.SHOW_TEXT);
   let current;while(current=walker.nextNode()){
-    if(current.nodeType===Node.TEXT_NODE){const value=current.nodeValue;const translated=lookup(value,current);if(translated&&translated!==value)current.nodeValue=translated;}
+    if(current.nodeType===Node.TEXT_NODE){const value=current.nodeValue;const translated=lookup(value,current);if(translated&&translated!==value)applyTranslatedText(current,value,translated);}
     else for(const name of attrs){const value=current.getAttribute(name);const translated=value&&lookup(value,current);if(translated&&translated!==value)current.setAttribute(name,translated);}
   }
 }
