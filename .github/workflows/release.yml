@@ -72,16 +72,12 @@ jobs:
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_NOTES_PREFIX: |-
-            ## 更新说明
-
-            以下内容根据上一版本以来已合并的提交与 PR 自动生成。
-
-            > 非官方 Figma 简体中文本地维护包。只包含翻译与补丁工具，不包含 Figma 应用。macOS Intel 已验证；其他平台在实机验收前标记为预览。
-        run: >-
-          gh release create "${{ steps.tag.outputs.value }}"
-          release/*
-          --repo "${{ github.repository }}"
-          --title "${{ steps.tag.outputs.value }}"
-          --notes "${RELEASE_NOTES_PREFIX}"
-          --generate-notes
+        run: |
+          VERSION_NOTES="$(node -p "require('./manifests/126.6.14.json').notes")"
+          RELEASE_NOTES_PREFIX="$(printf '## 更新说明\n\n%s\n\n以下提交与 PR 由 GitHub 自动汇总。\n\n> 非官方 Figma 简体中文本地维护包。只包含翻译与补丁工具，不包含 Figma 应用。macOS Intel 与 Apple Silicon 已实机验证；Windows 平台在实机验收前标记为预览。' "$VERSION_NOTES")"
+          gh release create "${{ steps.tag.outputs.value }}" \
+            release/* \
+            --repo "${{ github.repository }}" \
+            --title "${{ steps.tag.outputs.value }}" \
+            --notes "${RELEASE_NOTES_PREFIX}" \
+            --generate-notes

@@ -1,11 +1,12 @@
 {
   "name": "figma-zh-cn",
-  "version": "126.6.14-cn.5",
+  "version": "126.6.14-cn.6",
   "private": true,
   "description": "Figma 桌面版简体中文翻译与本地维护工具",
   "type": "module",
   "scripts": {
     "check": "node scripts/verify.mjs",
+    "lock:update": "node scripts/update-source-lock.mjs",
     "test": "node --test tests/*.test.mjs",
     "validate": "npm run check && npm test",
     "install:local": "node scripts/figma-zh-cn.mjs install",

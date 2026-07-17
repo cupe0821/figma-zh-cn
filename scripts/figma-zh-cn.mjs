@@ -63,11 +63,18 @@ function locateResources(explicit) {
 }
 
 function readAppInfo(appAsar) {
+  // @electron/asar caches archive headers by path. Installation replaces the
+  // archive at the same path, so invalidate the cache before every validation.
+  asar.uncache(appAsar);
   const raw = asar.extractFile(appAsar, "package.json").toString("utf8");
   const pkg = JSON.parse(raw);
   const mainPath = pkg.main || "main.js";
   const main = asar.extractFile(appAsar, mainPath).toString("utf8");
   return { version: pkg.version || "unknown", mainPath, main };
+}
+
+function hasLoaderMarker(source) {
+  return source.includes(marker) || source.includes("require('fg01');");
 }
 
 function countMatches(source, pattern) {
@@ -93,8 +100,7 @@ function assertTranslationHooks(source) {
 
 function patchMain(source) {
   let patched = source;
-  const hasLoader = patched.includes(marker) || patched.includes("require('fg01');");
-  if (!hasLoader) {
+  if (!hasLoaderMarker(patched)) {
     const strict = /^(?:\uFEFF)?(["']use strict["'];?)/;
     if (!strict.test(patched)) fail("Figma 主入口结构与已知版本不一致，已停止，未写入任何文件。");
     patched = patched.replace(strict, `$1${marker}`);
@@ -250,41 +256,70 @@ function rebuildAsar(original, mainPath, patchedMain) {
   }
 }
 
-function listBackups() {
-  if (!fs.existsSync(backupRoot)) return [];
-  return fs.readdirSync(backupRoot, { withFileTypes: true })
+function listBackups(root = backupRoot) {
+  if (!fs.existsSync(root)) return [];
+  return fs.readdirSync(root, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
-    .map((entry) => path.join(backupRoot, entry.name, "manifest.json"))
+    .map((entry) => path.join(root, entry.name, "manifest.json"))
     .filter(fs.existsSync)
-    .map((file) => ({ file, data: JSON.parse(fs.readFileSync(file, "utf8")) }))
-    .sort((a, b) => b.data.createdAt.localeCompare(a.data.createdAt));
+    .flatMap((file) => {
+      try {
+        return [{ file, data: JSON.parse(fs.readFileSync(file, "utf8")) }];
+      } catch {
+        return [];
+      }
+    })
+    .sort((a, b) => (b.data.createdAt || "").localeCompare(a.data.createdAt || ""));
 }
 
-function createBackup(resources, appAsar, appInfo) {
+function isVerifiedOriginalBackup(item, resources, figmaVersion) {
+  if (!item?.data?.backupAsar || !fs.existsSync(item.data.backupAsar)) return false;
+  if (path.resolve(item.data.resources || "") !== path.resolve(resources)) return false;
+  if (figmaVersion && item.data.figmaVersion !== figmaVersion) return false;
+  try {
+    if (item.data.originalSha256 && sha256(item.data.backupAsar) !== item.data.originalSha256) return false;
+    return !hasLoaderMarker(readAppInfo(item.data.backupAsar).main);
+  } catch {
+    return false;
+  }
+}
+
+function findOriginalBackup(resources, figmaVersion, root = backupRoot) {
+  return listBackups(root).find((item) => isVerifiedOriginalBackup(item, resources, figmaVersion));
+}
+
+function createOriginalBackup(resources, appAsar, appInfo, root = backupRoot) {
+  if (hasLoaderMarker(appInfo.main)) {
+    throw new Error("当前 app.asar 已包含中文加载器，不能将它保存为原始备份。");
+  }
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-  const dir = path.join(backupRoot, `${appInfo.version}-${stamp}`);
+  const dir = path.join(root, `${appInfo.version}-${stamp}`);
   fs.mkdirSync(dir, { recursive: true });
   const backupAsar = path.join(dir, "app.asar");
   fs.copyFileSync(appAsar, backupAsar);
-  const loader = path.join(resources, "node_modules", "fg01");
-  if (fs.existsSync(loader)) fs.cpSync(loader, path.join(dir, "fg01"), { recursive: true });
   const manifest = {
+    schemaVersion: 2,
     createdAt: new Date().toISOString(),
     figmaVersion: appInfo.version,
     resources,
     originalSha256: sha256(appAsar),
+    originalUnpatched: true,
     backupAsar
   };
   fs.writeFileSync(path.join(dir, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`);
   return manifest;
 }
 
-function copyLoader(resources) {
-  const target = path.join(resources, "node_modules", "fg01");
-  fs.mkdirSync(path.dirname(target), { recursive: true });
-  fs.rmSync(target, { recursive: true, force: true });
-  fs.cpSync(loaderSource, target, { recursive: true });
-  return target;
+function ensureOriginalBackup(resources, appAsar, appInfo, root = backupRoot) {
+  if (hasLoaderMarker(appInfo.main)) {
+    throw new Error("当前 app.asar 已被注入，无法从中创建原始备份。");
+  }
+  const currentSha256 = sha256(appAsar);
+  const existing = listBackups(root).find(
+    (item) => item.data.originalSha256 === currentSha256
+      && isVerifiedOriginalBackup(item, resources, appInfo.version),
+  );
+  return existing?.data || createOriginalBackup(resources, appAsar, appInfo, root);
 }
 
 function assertResourcesWritable(resources) {
@@ -303,24 +338,63 @@ function assertResourcesWritable(resources) {
   }
 }
 
-function restoreLoader(resources, backup) {
+function restoreLoader(resources, savedLoader) {
   const target = path.join(resources, "node_modules", "fg01");
-  const saved = path.join(path.dirname(backup.backupAsar), "fg01");
   fs.rmSync(target, { recursive: true, force: true });
-  if (fs.existsSync(saved)) fs.cpSync(saved, target, { recursive: true });
+  if (savedLoader && fs.existsSync(savedLoader)) fs.cpSync(savedLoader, target, { recursive: true });
 }
 
-async function install(resources) {
+function copyLoader(resources) {
+  const target = path.join(resources, "node_modules", "fg01");
+  const suffix = `${process.pid}-${Date.now()}`;
+  const staged = `${target}.figma-zh-cn-new-${suffix}`;
+  const previous = `${target}.figma-zh-cn-old-${suffix}`;
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.rmSync(staged, { recursive: true, force: true });
+  fs.rmSync(previous, { recursive: true, force: true });
+  fs.cpSync(loaderSource, staged, { recursive: true });
+  try {
+    if (fs.existsSync(target)) fs.renameSync(target, previous);
+    fs.renameSync(staged, target);
+    fs.rmSync(previous, { recursive: true, force: true });
+    return target;
+  } catch (error) {
+    fs.rmSync(target, { recursive: true, force: true });
+    if (fs.existsSync(previous)) fs.renameSync(previous, target);
+    throw error;
+  } finally {
+    fs.rmSync(staged, { recursive: true, force: true });
+  }
+}
+
+async function install(resources, { backups = backupRoot } = {}) {
   const appAsar = path.join(resources, "app.asar");
   let backup;
   let tempRoot;
+  let rollbackRoot;
+  let rollbackAsar;
+  let savedLoader;
   let appAsarReplaced = false;
   let loaderTouched = false;
   try {
     assertResourcesWritable(resources);
     const before = readAppInfo(appAsar);
     const patch = patchMain(before.main);
-    backup = createBackup(resources, appAsar, before);
+    backup = hasLoaderMarker(before.main)
+      ? findOriginalBackup(resources, before.version, backups)?.data
+      : ensureOriginalBackup(resources, appAsar, before, backups);
+
+    rollbackRoot = fs.mkdtempSync(path.join(os.tmpdir(), "figma-zh-cn-rollback-"));
+    if (patch.changed) {
+      rollbackAsar = path.join(rollbackRoot, "app.asar");
+      fs.copyFileSync(appAsar, rollbackAsar);
+    }
+    const currentLoader = path.join(resources, "node_modules", "fg01");
+    if (fs.existsSync(currentLoader)) {
+      savedLoader = path.join(rollbackRoot, "fg01");
+      fs.cpSync(currentLoader, savedLoader, { recursive: true });
+    }
+
     if (patch.changed) {
       const rebuilt = await rebuildAsar(appAsar, before.mainPath, patch.source);
       tempRoot = rebuilt.tempRoot;
@@ -334,32 +408,34 @@ async function install(resources) {
       appAsarReplaced = true;
       asar.uncache(appAsar);
     }
-    loaderTouched = true;
     const loader = copyLoader(resources);
+    loaderTouched = true;
     const after = readAppInfo(appAsar);
-    if (!after.main.includes(marker)) fail("安装后自检失败：启动标记不存在。");
+    if (!hasLoaderMarker(after.main)) fail("安装后自检失败：启动标记不存在。");
     assertTranslationHooks(after.main);
     console.log(`已安装：Figma ${after.version}`);
     console.log(`中文加载器：${loader}`);
-    console.log(`原始备份：${backup.backupAsar}`);
+    console.log(backup
+      ? `原始备份：${backup.backupAsar}`
+      : "原始备份：未找到；本次只更新已安装的中文加载器，未覆盖现有 app.asar。");
     console.log(`当前 app.asar SHA-256：${sha256(appAsar)}`);
   } catch (error) {
     let rollbackError;
-    if (backup && (appAsarReplaced || loaderTouched)) {
+    if (appAsarReplaced || loaderTouched) {
       try {
-        if (appAsarReplaced) {
-          fs.copyFileSync(backup.backupAsar, appAsar);
+        if (appAsarReplaced && rollbackAsar) {
+          fs.copyFileSync(rollbackAsar, appAsar);
           asar.uncache(appAsar);
         }
-        if (loaderTouched) restoreLoader(resources, backup);
+        if (loaderTouched) restoreLoader(resources, savedLoader);
       } catch (rollback) {
         rollbackError = rollback;
       }
     }
     if (rollbackError) {
       console.error(`安装失败，自动恢复也失败：${rollbackError.message}`);
-      console.error(`原始备份：${backup.backupAsar}`);
-    } else if (backup && (appAsarReplaced || loaderTouched)) {
+      if (backup?.backupAsar) console.error(`原始备份：${backup.backupAsar}`);
+    } else if (appAsarReplaced || loaderTouched) {
       console.error("安装失败，已自动恢复原始文件。", error.message);
     } else {
       console.error("安装失败，未修改 Figma。", error.message);
@@ -367,6 +443,7 @@ async function install(resources) {
     process.exitCode = 1;
   } finally {
     if (tempRoot) fs.rmSync(tempRoot, { recursive: true, force: true });
+    if (rollbackRoot) fs.rmSync(rollbackRoot, { recursive: true, force: true });
   }
 }
 
@@ -376,27 +453,50 @@ function status(resources) {
   const loader = path.join(resources, "node_modules", "fg01");
   console.log(`Figma 版本：${info.version}`);
   console.log(`resources：${resources}`);
-  console.log(`启动标记：${info.main.includes(marker) ? "已安装" : "未安装"}`);
+  console.log(`启动标记：${hasLoaderMarker(info.main) ? "已安装" : "未安装"}`);
   console.log(`中文加载器：${fs.existsSync(loader) ? "已安装" : "未安装"}`);
   console.log(`app.asar SHA-256：${sha256(appAsar)}`);
 }
 
-function uninstall(resources) {
+function uninstall(resources, { backups = backupRoot } = {}) {
   const appAsar = path.join(resources, "app.asar");
-  const backup = listBackups().find((item) => path.resolve(item.data.resources) === path.resolve(resources));
-  if (!backup || !fs.existsSync(backup.data.backupAsar)) {
+  const current = readAppInfo(appAsar);
+  const backup = findOriginalBackup(resources, current.version, backups);
+  if (!backup) {
     fail("找不到对应的原始备份，未执行卸载。请从 Figma 官方安装包覆盖安装以恢复原版。");
   }
   fs.copyFileSync(backup.data.backupAsar, appAsar);
+  const restored = readAppInfo(appAsar);
+  if (hasLoaderMarker(restored.main)) fail("原始备份验证失败，已停止移除中文加载器。");
   fs.rmSync(path.join(resources, "node_modules", "fg01"), { recursive: true, force: true });
   console.log(`已恢复：${backup.data.backupAsar}`);
   console.log("中文加载器已移除。macOS 用户请运行卸载脚本完成重新签名。");
 }
 
-const args = parseArgs(process.argv.slice(2));
-const resources = locateResources(args.resources);
+async function main(argv = process.argv.slice(2)) {
+  const args = parseArgs(argv);
+  const resources = locateResources(args.resources);
 
-if (args.command === "install") await install(resources);
-else if (args.command === "status") status(resources);
-else if (args.command === "uninstall") uninstall(resources);
-else fail(`未知命令：${args.command}`);
+  if (args.command === "install") await install(resources);
+  else if (args.command === "status") status(resources);
+  else if (args.command === "uninstall") uninstall(resources);
+  else fail(`未知命令：${args.command}`);
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  await main();
+}
+
+export {
+  createOriginalBackup,
+  ensureOriginalBackup,
+  findOriginalBackup,
+  hasLoaderMarker,
+  install,
+  isVerifiedOriginalBackup,
+  listBackups,
+  main,
+  patchMain,
+  readAppInfo,
+  uninstall,
+};
