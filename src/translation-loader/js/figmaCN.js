@@ -1,4 +1,4 @@
-/* Figma zh-CN translation overlay 2026-07-14 */
+/* Figma zh-CN translation overlay 2026-07-17 */
 (()=>{
 'use strict';
 const map={"Dither":"抖动","Bayer 2x2":"拜耳矩阵 2×2","Bayer 4x4":"拜耳矩阵 4×4","Bayer 8x8":"拜耳矩阵 8×8","Bayer 16x16":"拜耳矩阵 16×16","Levels":"色阶","Brightness":"亮度","mono":"单色","Mono":"单色","Mono color":"单色颜色","Autofill available. Type to see suggestions.":"可使用自动填充。输入内容以查看建议。","Halftone":"半色调","Pixelate":"像素化","Fractal Noise":"分形噪声","Liquid Metal":"液态金属","Riso Print":"孔版印刷","Particle Grid":"粒子网格","Gradient Map":"渐变映射","Dither waves":"抖动波纹","Fluid halftone":"流体半色调","Particle web":"粒子网络","Magnetic field":"磁场","Pattern type":"图案类型","Pattern Type":"图案类型","Pattern":"图案","Scale":"缩放","Threshold":"阈值","Pixel size":"像素大小","Pixel Size":"像素大小","Saturation":"饱和度","Hue":"色相","Gamma":"伽马","Exposure":"曝光","Intensity":"强度","Amount":"数量","Strength":"强度","Frequency":"频率","Amplitude":"振幅","Speed":"速度","Angle":"角度","Rotation":"旋转","Offset":"偏移","Seed":"随机种子","Density":"密度","Distortion":"扭曲","Warp":"变形","Sharpness":"锐度","Radius":"半径","Spacing":"间距","Direction":"方向","Time":"时间","Blend mode":"混合模式","Blend Mode":"混合模式","Background color":"背景颜色","Background Color":"背景颜色","Foreground color":"前景颜色","Foreground Color":"前景颜色","Duo":"双色","Multi":"多色","Monochrome":"单色","Invert":"反相","Animate":"动画","Loop":"循环","Smooth":"平滑","Softness":"柔和度","Detail":"细节","Octaves":"倍频程","Floyd-Steinberg":"弗洛伊德–斯坦伯格","Atkinson":"阿特金森","Ordered":"有序抖动","Error diffusion":"误差扩散","Effect settings":"效果设置","Pixel stretch":"像素拉伸","Pixel Stretch":"像素拉伸","Smoothness":"平滑度","Falloff":"衰减","Evolution":"演化","Gradient":"渐变","Rounding":"圆角","Phase":"相位","RGB split":"RGB 分离","Depth":"深度","Roughness":"粗糙度","Stretch":"拉伸","Repeats":"重复次数","Transform":"变换","Chrome":"铬金属","Liquid chrome":"液态铬金属","Liquid Chrome":"液态铬金属","Chrome Gradient":"金属渐变","Blur Strength":"模糊强度","Gradient Offset":"渐变偏移","Noise Scale":"噪声缩放","Chroma Separation":"色差分离","Height Intensity":"高度强度","Noise Angle":"噪声角度","Gradient Repeats":"渐变重复次数","Dot":"圆点","Dots":"圆点","Color mode":"颜色模式","Color Mode":"颜色模式","CMYK":"印刷四色","Dot size":"圆点大小","Dot Size":"圆点大小","Dot scale":"圆点缩放","Dot Scale":"圆点缩放","Clip to alpha":"按透明度通道裁剪","clipToAlpha":"按透明度通道裁剪","Hatching":"排线","Waves":"波纹","Chromatic aberration":"色差","Chromatic Aberration":"色差","Aberration":"色差","Mode":"模式","Lateral":"横向","Longitudinal":"纵向","Anamorphic":"变形宽银幕","Center point":"中心点","Center Point":"中心点","Quality":"质量","Low":"低","Medium":"中","High":"高"};
@@ -42,7 +42,7 @@ Object.assign(map,{
   "Full seat":"完整席位","Dev seat":"开发席位","Collab seat":"协作席位","View seat":"查看席位","Credits":"额度","AI credits":"AI 额度","Monthly credits":"每月额度","Credits reset":"额度重置",
   "Grid":"网格","Blended":"混合","BW light":"黑白（浅色）","BW dark":"黑白（深色）","Shader effects":"着色器效果","Shader Effects":"着色器效果","Generate code with context from this file via the remote MCP server.":"通过远程 MCP 服务器，结合此文件的上下文生成代码。","Generate code with context from this file via a remote MCP server.":"通过远程 MCP 服务器，结合此文件的上下文生成代码。","Generate code with context from this file via the desktop MCP server.":"通过桌面 MCP 服务器，结合此文件的上下文生成代码。"
 });
-Object.assign(map,{"Added by":"添加者：","admin":"管理员","Admin":"管理员"});
+Object.assign(map,{"Added by":"添加者：","admin":"管理员","Admin":"管理员","No variables or properties available":"没有可用的变量或属性","Toggle visibility":"切换可见性"});
 delete map.CMYK;
 delete map['BW light'];
 delete map['BW dark'];
@@ -69,6 +69,10 @@ const compareListParameterNames=new Set([
   'shadow','inner shadow','drop shadow','effect','image','scale mode','crop','exposure','contrast','saturation','temperature','tint'
 ]);
 const shaderPanelSelector='[data-testid="effects-settings-picker"],[data-testid*="custom-paint-prop-editor"],[data-testid*="shader"]';
+const componentPropertyControlSelector='[data-testid*="component-property" i],[data-testid*="component_property" i],[data-testid*="variant-property" i],[data-testid*="variant_property" i],[data-testid*="variant-select" i],[data-testid*="instance-property" i],[aria-label*="component property" i],[aria-label*="variant property" i],[class*="component_property" i],[class*="component-property" i],[class*="variant_property" i],[class*="variant-property" i]';
+const componentUserNameSelector='[data-testid*="component-name" i],[data-testid*="variant-name" i],[data-testid*="property-name" i],[data-testid*="property-value" i],[data-testid*="component-property-option" i],[data-testid*="variant-option" i],[data-testid*="instance-property-option" i],[aria-label*="component name" i],[aria-label*="variant name" i],[aria-roledescription*="component property" i],[aria-roledescription*="variant property" i],[data-node-type="COMPONENT" i],[data-node-type="INSTANCE" i]';
+const componentPropertyValueSignatures=[['listening'],['speaking'],['offline'],['disabled','已禁用'],['thinking','思考中'],['idle'],['loading','正在加载','加载中']];
+const componentPropertyValuePairSignatures=[[['default','默认'],['scrolled']]];
 const attrs=['aria-label','aria-description','aria-valuetext','data-label','data-tooltip','placeholder','title','alt'];
 const shortMonths={jan:1,january:1,feb:2,february:2,mar:3,march:3,apr:4,april:4,may:5,jun:6,june:6,jul:7,july:7,aug:8,august:8,sep:9,september:9,oct:10,october:10,nov:11,november:11,dec:12,december:12};
 function localizeShortDate(value){
@@ -197,6 +201,43 @@ function isCompareListParameterContext(element,normalized){
   }
   return false;
 }
+function isComponentPropertyValueContext(element){
+  if(!element)return false;
+  if(element.closest?.(`${componentPropertyControlSelector},${componentUserNameSelector}`))return true;
+  const popup=element.closest?.('[role="listbox"],[role="menu"]');
+  if(popup&&(popup.matches?.(componentPropertyControlSelector)||popup.querySelector?.(componentPropertyControlSelector)))return true;
+  const popupId=popup?.getAttribute?.('id');
+  if(popupId){
+    const escaped=globalThis.CSS?.escape?CSS.escape(popupId):popupId.replace(/["\\]/g,'\\$&');
+    const trigger=document.querySelector?.(`[aria-controls="${escaped}"],[aria-owns="${escaped}"]`);
+    if(trigger?.closest?.(componentPropertyControlSelector))return true;
+  }
+  let container=popup||element;
+  for(let depth=0;container&&depth<6;depth++,container=container.parentElement){
+    const text=(container.textContent||'').trim().replace(/\s+/g,' ').toLocaleLowerCase('en-US');
+    if(!text||text.length>400)continue;
+    for(const signature of componentPropertyValuePairSignatures){if(signature.every((variants)=>variants.some((label)=>text.includes(label))))return true;}
+    let hits=0;
+    for(const variants of componentPropertyValueSignatures){if(variants.some((label)=>text.includes(label))&&++hits>=5)return true;}
+  }
+  return false;
+}
+function isExportQualityContext(element,normalized){
+  if(!element||!shaderQualityNames.has(normalized.toLocaleLowerCase('en-US')))return false;
+  if(element.closest?.('[aria-label*="quality" i],[data-testid*="quality" i],[class*="quality" i]'))return true;
+  let container=element;
+  for(let depth=0;container&&depth<9;depth++,container=container.parentElement){
+    const text=(container.textContent||'').trim().replace(/\s+/g,' ').toLocaleLowerCase('en-US');
+    if(!text)continue;
+    if(text.length<=220&&(text.includes('quality')||text.includes('质量')))return true;
+    if(text.length>1800)continue;
+    const hasExport=text.includes('export')||text.includes('导出');
+    const hasQuality=text.includes('quality')||text.includes('质量');
+    const hasExportOptions=/(?:image resampling|图像重采样|color profile|颜色描述文件|suffix|后缀)/i.test(text);
+    if(hasExport&&hasQuality&&hasExportOptions)return true;
+  }
+  return false;
+}
 function isShaderQualityPopup(element,normalized){
   if(!element||!shaderQualityNames.has(normalized.toLocaleLowerCase('en-US')))return false;
   let container=element;
@@ -228,6 +269,7 @@ function isColorSpaceContext(element,normalized){
 function lookup(value,node){
   if(typeof value!=='string')return undefined;
   const leading=value.match(/^\s*/)?.[0]??'',trailing=value.match(/\s*$/)?.[0]??'',trimmed=value.trim(),normalized=trimmed.replace(/[\u200B-\u200F\u2060\uFEFF]/g,'').replace(/\s+/g,' ');
+  if(!/[A-Za-z0-9]/.test(normalized))return undefined;
   const element=node?.nodeType===Node.ELEMENT_NODE?node:node?.parentElement;
   const blendModeNormal=isBlendModeNormalContext(element,normalized);
   const iphoneDeviceColor=isIPhoneDeviceColorContext(element,normalized);
@@ -235,11 +277,13 @@ function lookup(value,node){
   const libraryModeName=isLibraryModeNameContext(element,normalized);
   const ambiguousThemeName=normalized.toLocaleLowerCase('en-US')==='dark'||normalized.toLocaleLowerCase('en-US')==='light';
   const relativeTime=/^\d+\s+(?:seconds?|minutes?|hours?|days?|weeks?|months?|years?)\s+ago$/i.test(normalized)||/^\d+\s*[smhdw]\s+ago$/i.test(normalized);
+  if(isComponentPropertyValueContext(element))return undefined;
   if(isCompareListParameterContext(element,normalized))return undefined;
   if(isCodeSyntaxContext(element)&&!blendModeNormal&&!relativeTime)return undefined;
   if(libraryModeName||ambiguousThemeName&&!themeOption)return undefined;
   const shaderQuality=shaderQualityNames.has(normalized.toLocaleLowerCase('en-US'))&&(element?.closest?.(shaderPanelSelector)||isShaderQualityPopup(element,normalized));
-  if(!blendModeNormal&&!shaderQuality&&!iphoneDeviceColor&&!themeOption&&isFontWeightContext(element,normalized))return undefined;
+  const exportQuality=isExportQualityContext(element,normalized);
+  if(!blendModeNormal&&!shaderQuality&&!exportQuality&&!iphoneDeviceColor&&!themeOption&&isFontWeightContext(element,normalized))return undefined;
   if(isColorSpaceContext(element,normalized))return undefined;
   let translated=map[trimmed]??map[normalized]??ciMap.get(trimmed.toLocaleLowerCase('en-US'))??ciMap.get(normalized.toLocaleLowerCase('en-US'));
   if(blendModeNormal)translated='正常';
@@ -271,8 +315,14 @@ function lookup(value,node){
     else if(match=normalized.match(/^(\d+)\s+autosave\s+versions?$/i))translated=`${match[1]} 个自动保存版本`;
     else if(match=normalized.match(/^Component instance(\s*\(.+\))$/i))translated=`组件实例${match[1]}`;
     else if(match=normalized.match(/^(\d+)\s+layers?$/i))translated=`${match[1]} 个图层`;
+    else if(match=normalized.match(/^Rename\s+(\d+)\s+layers?$/i))translated=`重命名 ${match[1]} 个图层`;
+    else if(match=normalized.match(/^Reset\s+["“](.+)["”]$/i))translated=`重置“${match[1]}”`;
     else if(match=normalized.match(/^(\d+)\s+of\s+(\d+)$/i))translated=`${match[1]} / ${match[2]}`;
     else if(match=normalized.match(/^Step\s+(\d+)\s+of\s+(\d+)$/i))translated=`第 ${match[1]} 步，共 ${match[2]} 步`;
+    else if(match=normalized.match(/^See all\s+(\d+)\s+colors?$/i))translated=`查看全部 ${match[1]} 种颜色`;
+    else if(match=normalized.match(/^Connection error:\s*(-?\d+)$/i))translated=`连接错误：${match[1]}`;
+    else if(match=normalized.match(/^Error code:\s*(-?\d+)$/i))translated=`错误代码：${match[1]}`;
+    else if(match=normalized.match(/^Error navigating to ['“](.+?)['”]:\s*(ERR_[A-Z0-9_]+)$/i))translated=`导航至“${match[1]}”时出错：${match[2]}`;
     else if(match=normalized.match(/^Auto\s*\((.+)\)$/i))translated=`自动（${match[1]}）`;
     else if(match=normalized.match(/^Turn (on|off) auto-keyframe(?:\s+(.+))?$/i))translated=`${match[1].toLowerCase()==='on'?'开启':'关闭'}自动关键帧${match[2]?` ${match[2]}`:''}`;
     else if(match=normalized.match(/^([\d,.]+)\s+credits?\s+left$/i))translated=`剩余 ${match[1]} 点额度`;
@@ -328,11 +378,27 @@ function translateNode(node){
     else for(const name of attrs){const value=current.getAttribute(name);const translated=value&&lookup(value,current);if(translated&&translated!==value)current.setAttribute(name,translated);}
   }
 }
+function collectMutationRoots(records){
+  const roots=new Set();
+  for(const record of records){
+    if(record.type==='characterData'||record.type==='attributes')roots.add(record.target);
+    else for(const node of record.addedNodes)roots.add(node);
+  }
+  const result=[];
+  rootLoop:for(const root of roots){
+    for(let parent=root.parentNode;parent;parent=parent.parentNode){if(roots.has(parent))continue rootLoop;}
+    result.push(root);
+  }
+  return result;
+}
 function start(){
   if(!document.body)return;
+  const observer=new MutationObserver(records=>{for(const root of collectMutationRoots(records))translateNode(root);});
+  observer.observe(document.body,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:attrs});
   translateNode(document.body);
-  new MutationObserver(records=>{for(const record of records){if(record.type==='characterData'||record.type==='attributes')translateNode(record.target);else for(const node of record.addedNodes)translateNode(node);}}).observe(document.body,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:attrs});
-  window.__FigmaZhCN={version:'2026-07-14',entries:Object.keys(map).length,translate:translateNode};
+  const pending=observer.takeRecords();
+  for(const root of collectMutationRoots(pending))translateNode(root);
+  window.__FigmaZhCN={version:'2026-07-17',entries:Object.keys(map).length,translate:translateNode};
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();

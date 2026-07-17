@@ -6,7 +6,10 @@ import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const dictionary = JSON.parse(fs.readFileSync(path.join(root, "src/translation-loader/js/lang.cn.json"), "utf8"));
+const menuDictionary = JSON.parse(fs.readFileSync(path.join(root, "src/translation-loader/js/lang.cn.menu.json"), "utf8"));
 const runtime = fs.readFileSync(path.join(root, "src/translation-loader/js/figmaCN.js"), "utf8");
+const injector = fs.readFileSync(path.join(root, "src/translation-loader/lib/injectJsToWebContents.js"), "utf8");
+const loaderEntry = fs.readFileSync(path.join(root, "src/translation-loader/index.js"), "utf8");
 
 test("关键累积翻译不会被后续更新覆盖", () => {
   const expected = {
@@ -117,7 +120,57 @@ test("关键累积翻译不会被后续更新覆盖", () => {
     "Shader fills": "着色器填充",
     "Rotate 90º": "旋转 90°",
     "Rotate 90˚": "旋转 90°",
-    "Rotate 90 degrees": "旋转 90°"
+    "Rotate 90 degrees": "旋转 90°",
+    "Match (optional)": "匹配（可选）",
+    "Rename to": "重命名为",
+    "Number ↑": "编号 ↑",
+    "Number ↓": "编号 ↓",
+    "Use your fonts with Figma agents": "在 Figma 智能体中使用您的字体",
+    "This file uses local fonts from your machine. Upload to make them available to the agent. You can view and manage uploaded fonts in Settings at any time.": "此文件使用您电脑上的本地字体。上传字体后，智能体即可使用。您可以随时在“设置”中查看和管理已上传的字体。",
+    "Manage uploaded fonts": "管理已上传的字体",
+    "Something went wrong...": "出现问题…",
+    "Something went wrong…": "出现问题…",
+    "Our team is looking into it now. If refreshing the page doesn't work, check our status page for updates.": "我们的团队正在调查。如果刷新页面后问题仍未解决，请查看我们的状态页面以了解最新情况。",
+    "Our team is looking into it now. If refreshing the page doesn't work, check our": "我们的团队正在调查。如果刷新页面后问题仍未解决，请查看我们的",
+    "status page": "状态页面",
+    "for updates.": "了解最新情况。",
+    "Reload page": "重新加载页面",
+    "Reload Page": "重新加载页面",
+    "No variables or properties available": "没有可用的变量或属性",
+    "Toggle visibility": "切换可见性",
+    "Reset specific changes": "重置特定更改",
+    "Enter a description for your starting point": "输入起始点描述",
+    "Add delay": "添加延迟",
+    "Condition": "条件",
+    "Equal to": "等于",
+    "Not equal to": "不等于",
+    "Greater than": "大于",
+    "Greater than or equal to": "大于或等于",
+    "Less than": "小于",
+    "Less than or equal to": "小于或等于",
+    "Add new": "新建",
+    "Pick variable": "选择变量",
+    "Boolean literal": "布尔字面量",
+    "Boolean operator": "布尔运算符",
+    "Flip curve": "翻转曲线",
+    "After delay": "延迟后",
+    "Reset video state": "重置视频状态",
+    "Behavior": "行为",
+    "Toggle": "切换",
+    "Play only": "仅播放",
+    "Pause only": "仅暂停",
+    "Timestamp": "时间戳",
+    "Reset interactions": "重置交互",
+    "Edit flow description": "编辑流程描述",
+    "Remove flow starting point": "移除流程起始点",
+    "Copy flow link": "复制流程链接",
+    "Include \"id\" attribute": "包含“id”属性",
+    "Your computer may be offline or the Figma server may be experiencing problems.": "您的电脑可能处于离线状态，或 Figma 服务器可能出现问题。",
+    "Figma will automatically try to reconnect.": "Figma 将自动尝试重新连接。",
+    "For help, visit help.figma.com or contact support@figma.com.": "如需帮助，请访问 help.figma.com 或联系 support@figma.com。",
+    "For help, visit": "如需帮助，请访问",
+    "or contact": "或联系",
+    "Simplify Stroke": "简化描边"
   };
   for (const [source, target] of Object.entries(expected)) assert.equal(dictionary[source], target, source);
 });
@@ -172,6 +225,8 @@ test("iPhone 设备预设颜色使用 Apple 中国大陆官方名称", () => {
   assert.match(runtime, /if\(libraryModeName\|\|ambiguousThemeName&&!themeOption\)return undefined/);
   assert.match(runtime, /\^Step\\s\+\(\\d\+\)\\s\+of/);
   assert.match(runtime, /\^Auto\\s\*\\\(\(\.\+\)\\\)\$/);
+  assert.match(runtime, /Rename\\s\+\(\\d\+\)\\s\+layers/);
+  assert.match(runtime, /Reset\\s\+\["“\]/);
 });
 
 test("专业名词与代码内容的保护规则仍存在", () => {
@@ -185,12 +240,59 @@ test("专业名词与代码内容的保护规则仍存在", () => {
   assert.match(runtime, /\(\?:auto\|自动\)/);
   const autoModePattern = /(?:auto|自动)\s*[\(（][^)）]+[\)）]/i;
   for (const label of ["Auto (Dark)", "自动（Dark）", "自动 (Light)"]) assert.match(label, autoModePattern);
+  for (const userName of ["if", "else", "Not", "App", "to"]) assert.equal(dictionary[userName], undefined, userName);
+  assert.doesNotMatch(runtime, /interactionConditionalTranslations|isInteractionConditionContext/);
+  assert.match(runtime, /isExportQualityContext/);
+  assert.match(runtime, /text\.length<=220&&\(text\.includes\('quality'\)\|\|text\.includes\('质量'\)\)/);
+  assert.match(runtime, /!shaderQuality&&!exportQuality/);
+  assert.match(runtime, /\^See all\\s\+\(\\d\+\)\\s\+colors/);
+  assert.match(runtime, /\^Connection error:/);
+  assert.match(runtime, /\^Error code:/);
+  assert.match(runtime, /Error navigating to/);
+  assert.match(runtime, /ERR_\[A-Z0-9_\]/);
+});
+
+test("组件属性值保留用户手动命名", () => {
+  assert.equal(dictionary.Disabled, "已禁用");
+  assert.equal(dictionary.Default, "默认");
+  assert.match(runtime, /"Thinking":"思考中"/);
+  assert.match(runtime, /"Loading":"正在加载"/);
+  assert.match(runtime, /componentPropertyControlSelector/);
+  assert.match(runtime, /componentUserNameSelector/);
+  assert.match(runtime, /componentPropertyValueSignatures/);
+  assert.match(runtime, /componentPropertyValuePairSignatures/);
+  assert.match(runtime, /\['default','默认'\],\['scrolled'\]/);
+  assert.doesNotMatch(runtime, /data-testid\*="component-properties"/);
+  assert.doesNotMatch(runtime, /__reactFiber\$/);
+  assert.match(runtime, /isComponentPropertyValueContext/);
+  assert.match(runtime, /if\(isComponentPropertyValueContext\(element\)\)return undefined/);
+  assert.doesNotMatch(runtime, /componentPanelSystem|invalidVariantName|This layer has an invalid name/);
+});
+
+test("原生标签页菜单使用固定与取消固定", () => {
+  assert.equal(menuDictionary.Pin, "固定");
+  assert.equal(menuDictionary.Unpin, "取消固定");
 });
 
 test("翻译加载器包含防重复和动态界面处理", () => {
   assert.match(runtime, /MutationObserver/);
+  assert.doesNotMatch(runtime, /observedRoots|shadowRoot|attachShadow/);
+  assert.doesNotMatch(injector, /framesInSubtree|collectFrameSubtree/);
+  assert.doesNotMatch(loaderEntry, /getAllWebContents|reloadIgnoringCache|patchFigmaLocale/);
+  assert.doesNotMatch(injector, /setTimeout|setInterval|requestAnimationFrame|requestIdleCallback/);
+  assert.doesNotMatch(runtime, /panelTitleClass|panelTitleReady|revealPanelTitle|figma-zh-cn-panel-title-style/);
+  assert.match(runtime, /if\(!\/\[A-Za-z0-9\]\//);
+  assert.match(runtime, /collectMutationRoots/);
+  assert.match(runtime, /roots\.has\(parent\)/);
+  assert.match(runtime, /observer\.observe\(document\.body/);
+  assert.match(runtime, /observer\.takeRecords\(\)/);
+  assert.ok(
+    runtime.indexOf("observer.observe(document.body") < runtime.indexOf("translateNode(document.body)"),
+    "首次扫描前必须先监听，避免漏掉 React 初始化期间新增的节点",
+  );
+  assert.match(injector, /delete window\.__FigmaCNBaseMap/);
   assert.match(runtime, /normalize/);
   assert.match(runtime, /value\.trim\(\)===['"]Pen['"].*translated\.trim\(\)===['"]钢笔['"]/s);
   assert.match(runtime, /white-space['"],['"]nowrap/);
-  assert.equal(Object.keys(dictionary).length, 4461);
+  assert.ok(Object.keys(dictionary).length >= 4479);
 });

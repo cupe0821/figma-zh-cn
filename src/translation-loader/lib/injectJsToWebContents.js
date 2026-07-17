@@ -26,23 +26,47 @@ if (!overlayCode.includes("window.__FigmaZhCN")) {
 const injectedCode =
   `if(!window.__FigmaZhCN){window.__FigmaCNBaseMap=${JSON.stringify(baseDictionary)};\n` +
   overlayCode +
-  `\n}`;
+  `\ndelete window.__FigmaCNBaseMap;\n}`;
 
-module.exports = function injectChinese(webContents) {
-  function injectAllFrames() {
-    const frames = webContents.mainFrame?.frames || [];
-    if (!frames.length) {
-      Promise.resolve(webContents.executeJavaScript(injectedCode)).catch((error) => {
-        console.error("[FigmaCN] Failed to inject Chinese translations", error);
-      });
-      return;
-    }
-    for (const frame of frames) {
-      Promise.resolve(frame.executeJavaScript(injectedCode)).catch((error) => {
-        console.error("[FigmaCN] Failed to inject a frame", error);
-      });
-    }
+function defaultResolveFrame(webContents, processId, routingId) {
+  try {
+    const frame = require("electron").webFrameMain.fromId(processId, routingId);
+    if (frame) return frame;
+  } catch {}
+  return (webContents.mainFrame?.frames || []).find(
+    (frame) => frame.processId === processId && frame.routingId === routingId,
+  ) || null;
+}
+
+module.exports = function injectChinese(
+  webContents,
+  { resolveFrame } = {},
+) {
+  function injectFrame(frame, label) {
+    if (!frame || frame.isDestroyed?.()) return;
+    Promise.resolve(frame.executeJavaScript(injectedCode)).catch((error) => {
+      console.error(`[FigmaCN] Failed to inject ${label}`, error);
+    });
   }
-  webContents.on("dom-ready", injectAllFrames);
-  webContents.on("did-frame-finish-load", injectAllFrames);
+
+  // The main document is injected once for each navigation. Child-frame load
+  // events are resolved to the exact frame that fired the event, so a newly
+  // loaded iframe never causes every existing frame to parse the full payload.
+  webContents.on("dom-ready", () => {
+    injectFrame(webContents.mainFrame || webContents, "the main frame");
+  });
+  webContents.on(
+    "did-frame-finish-load",
+    (_event, isMainFrame, frameProcessId, frameRoutingId) => {
+      if (isMainFrame) return;
+      injectFrame(
+        resolveFrame
+          ? resolveFrame(frameProcessId, frameRoutingId)
+          : defaultResolveFrame(webContents, frameProcessId, frameRoutingId),
+        `frame ${frameProcessId}:${frameRoutingId}`,
+      );
+    },
+  );
 };
+
+module.exports.injectedCode = injectedCode;
