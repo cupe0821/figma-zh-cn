@@ -1,7 +1,7 @@
 {
   "figmaVersion": "126.6.14",
-  "translationVersion": "126.6.14-cn.6",
-  "dictionaryEntries": 4509,
+  "translationVersion": "126.6.14-cn.7",
+  "dictionaryEntries": 4602,
   "loaderModule": "fg01",
   "bootstrap": "require(\"fg01\");",
   "platforms": {
@@ -10,5 +10,5 @@
     "windows-x64": "preview",
     "windows-arm64": "preview"
   },
-  "notes": "累计词典扩展至 4509 条，并补充原型交互、导出、连接器、AI、着色器和错误页面翻译；保留组件与用户命名、代码、字体字重、色彩空间等上下文。运行时改为目标帧注入与变更合并，安装器增加可信原版备份、失败回滚和 ASAR 缓存失效处理。延续 3 处原生菜单翻译、1 处桌面字符串翻译、ASAR 尾部大小标记与稳定本地签名修复。macOS Intel 与 Apple Silicon 已在 Figma 126.6.14 实机验证。"
+  "notes": "累计词典扩展至 4602 条，补充动画与时间轴、导出与下载、无障碍、字体上传、资源更新、MCP 和错误页面等界面翻译；修正圆弧与运动参数术语，并将着色器六边形、导出质量、布局参考线数量及字体排印行高等同名内容限定到准确上下文。保留组件与用户命名、代码与 CSS、字体名称和字重、色彩空间等专业内容；优化动态输入框的稳定中文显示，不改写 Figma 内部值，也不增加全局轮询或高频鼠标监听。macOS Intel 与 Apple Silicon 已在 Figma 126.6.14 实机验证，Windows x64 与 ARM64 继续由同源流程构建预览包。"
 }

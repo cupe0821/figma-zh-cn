@@ -5,7 +5,7 @@ const map={"Dither":"抖动","Bayer 2x2":"拜耳矩阵 2×2","Bayer 4x4":"拜耳
 Object.assign(map,{
   "Hatching":"排线","Clouds":"云朵","Concentric patterns":"同心图案","Caustics":"水体焦散","Gradient map":"渐变映射","Pattern grids":"图案网格","Bloom":"泛光","Mesh gradient":"网格渐变","Fractal noise":"分形噪声","Chromatic metal":"彩色金属","Channel mixer":"通道混合","Moiré":"莫尔纹","Gooey merge":"黏液融合","Glowing waves":"发光波浪","Bokeh blur":"散景模糊","Filter presets":"滤镜预设","Nebula":"星云","Color adjust":"色彩调整","Outline":"轮廓","Colored edges":"彩色边缘","Lens distortion":"镜头畸变","Pattern refraction":"图案折射","Slice shift":"切片移位",
   "Position":"位置","Position X":"横向位置","Position Y":"纵向位置","Center":"中心","Center X":"中心横坐标","Center Y":"中心纵坐标","Origin":"原点","Origin X":"原点横坐标","Origin Y":"原点纵坐标","Width":"宽度","Height":"高度","Resolution":"分辨率","Size":"大小","Count":"数量","Rows":"行数","Columns":"列数","Cell size":"单元格大小","Line width":"线宽","Thickness":"厚度","Opacity":"不透明度","Color":"颜色","Color 1":"颜色 1","Color 2":"颜色 2","Color 3":"颜色 3","Color 4":"颜色 4","Primary color":"主色","Secondary color":"辅助色","Highlight color":"高光颜色","Shadow color":"阴影颜色","Highlights":"高光","Shadows":"阴影","Midtones":"中间调","Tint":"色调","Temperature":"色温","Vibrance":"自然饱和度","Lightness":"明度","Contrast":"对比度","Black point":"黑场","White point":"白场",
-  "Shape":"形状","Circle":"圆形","Square":"方形","Diamond":"菱形","Triangle":"三角形","Hexagon":"六边形","Lines":"线条","Blur":"模糊","Blur radius":"模糊半径","Focus":"焦点","Focus distance":"焦距","Aperture":"光圈","Bokeh size":"散景大小","Samples":"采样数","Refraction":"折射","Refraction amount":"折射量","Refractive index":"折射率","Chromatic dispersion":"色散","Dispersion":"色散","Wave count":"波浪数量","Wave speed":"波浪速度","Wave height":"波浪高度","Wavelength":"波长","Turbulence":"湍流","Flow":"流动","Viscosity":"黏度","Gravity":"重力",
+  "Shape":"形状","Circle":"圆形","Square":"方形","Diamond":"菱形","Triangle":"三角形","Lines":"线条","Blur":"模糊","Blur radius":"模糊半径","Focus":"焦点","Focus distance":"焦距","Aperture":"光圈","Bokeh size":"散景大小","Samples":"采样数","Refraction":"折射","Refraction amount":"折射量","Refractive index":"折射率","Chromatic dispersion":"色散","Dispersion":"色散","Wave count":"波浪数量","Wave speed":"波浪速度","Wave height":"波浪高度","Wavelength":"波长","Turbulence":"湍流","Flow":"流动","Viscosity":"黏度","Gravity":"重力",
   "Noise":"噪声","Noise amount":"噪声量","Noise strength":"噪声强度","Noise type":"噪声类型","Noise detail":"噪声细节","Noise seed":"噪声种子","Noise frequency":"噪声频率","Noise amplitude":"噪声振幅","Noise octaves":"噪声倍频程","Grain":"颗粒","Grain size":"颗粒大小","Granularity":"颗粒度","Randomness":"随机度","Jitter":"抖动量","Scatter":"散布","Complexity":"复杂度","Edge width":"边缘宽度","Edge color":"边缘颜色","Edge threshold":"边缘阈值","Edge intensity":"边缘强度","Slice count":"切片数量","Slice size":"切片大小","Shift":"移位","Horizontal shift":"横向移位","Vertical shift":"纵向移位",
   "Pattern scale":"图案缩放","Pattern rotation":"图案旋转","Pattern offset":"图案偏移","Pattern opacity":"图案不透明度","Grid size":"网格大小","Grid spacing":"网格间距","Grid line width":"网格线宽","Metalness":"金属度","Metallic":"金属质感","Reflectivity":"反射率","Specular":"镜面反射","Shine":"光泽","Red":"红色","Green":"绿色","Blue":"蓝色","Cyan":"青色","Magenta":"品红","Yellow":"黄色","Black":"黑色","Alpha":"透明度","Source":"来源","Target":"目标","Input":"输入","Output":"输出","Preset":"预设","Presets":"预设","Custom":"自定义","Normal":"正常","Multiply":"正片叠底","Screen":"滤色","Overlay":"叠加","Soft light":"柔光","Hard light":"强光","Color dodge":"颜色减淡","Color burn":"颜色加深","Darken":"变暗","Lighten":"变亮","Difference":"差值","Exclusion":"排除",
   "Clamp":"钳制","Mirror":"镜像","Tile":"平铺","Repeat":"重复","Fill":"填充","Fit":"适应","Crop":"裁剪","Linear":"线性","Radial":"径向","Conic":"锥形","Angular":"角度","Horizontal":"横向","Vertical":"纵向","Both":"两者","None":"无","Automatic":"自动","Manual":"手动","On":"开","Off":"关","Posterize":"色调分离","Quantize":"量化","Quantization":"量化","Quantization levels":"量化级数","Dither size":"抖动大小","Dither amount":"抖动量","Dither scale":"抖动缩放","Dither type":"抖动类型","Distortion scale":"扭曲缩放","Distortion amount":"扭曲量","Warp amount":"变形量","Warp scale":"变形缩放","Aspect ratio":"宽高比","Aspect":"宽高比","Zoom":"缩放","Iterations":"迭代次数","Steps":"步数","Bands":"色带数量","Colors":"颜色","Number of colors":"颜色数量","Palette":"调色板","Gradient angle":"渐变角度","Gradient scale":"渐变缩放","Gradient start":"渐变起点","Gradient end":"渐变终点","Threshold low":"低阈值","Threshold high":"高阈值","Min":"最小值","Max":"最大值","Minimum":"最小值","Maximum":"最大值",
@@ -47,7 +47,7 @@ delete map.CMYK;
 delete map['BW light'];
 delete map['BW dark'];
 const ciMap=new Map(Object.entries(map).map(([key,value])=>[key.toLocaleLowerCase('en-US'),value]));
-const shaderOnlyMap={"X":"横向","Y":"纵向","R":"半径","A":"角度","Light":"光照"};
+const shaderOnlyMap={"X":"横向","Y":"纵向","R":"半径","A":"角度","Light":"光照","Hex":"六边形","Hexagon":"六边形","Hexagonal":"六边形"};
 const generatedLayerMap={frame:'画框',rectangle:'矩形',ellipse:'椭圆',polygon:'多边形',star:'星形',line:'直线',vector:'矢量',group:'组',section:'分区',component:'组件',instance:'实例',text:'文本'};
 const fontWeightNames=new Set(['thin','hairline','extra light','ultra light','light','book','regular','roman','normal','medium','semi bold','semibold','demi bold','demibold','bold','extra bold','extrabold','ultra bold','heavy','black','extra black','italic','oblique','bold italic']);
 const colorSpaceNames=new Set(['rgb','cmyk','bw light','bw dark','srgb','linear','oklab','lab','lch','oklch','display p3','p3','hsl','hsv','hsb']);
@@ -73,6 +73,9 @@ const componentPropertyControlSelector='[data-testid*="component-property" i],[d
 const componentUserNameSelector='[data-testid*="component-name" i],[data-testid*="variant-name" i],[data-testid*="property-name" i],[data-testid*="property-value" i],[data-testid*="component-property-option" i],[data-testid*="variant-option" i],[data-testid*="instance-property-option" i],[aria-label*="component name" i],[aria-label*="variant name" i],[aria-roledescription*="component property" i],[aria-roledescription*="variant property" i],[data-node-type="COMPONENT" i],[data-node-type="INSTANCE" i]';
 const componentPropertyValueSignatures=[['listening'],['speaking'],['offline'],['disabled','已禁用'],['thinking','思考中'],['idle'],['loading','正在加载','加载中']];
 const componentPropertyValuePairSignatures=[[['default','默认'],['scrolled']]];
+const controlledAutoInputs=new WeakSet();
+const controlledAutoOverlayAttribute='data-figma-cn-controlled-auto';
+const controlledAutoOverlayStyleId='figma-cn-controlled-auto-style';
 const attrs=['aria-label','aria-description','aria-valuetext','data-label','data-tooltip','placeholder','title','alt'];
 const shortMonths={jan:1,january:1,feb:2,february:2,mar:3,march:3,apr:4,april:4,may:5,jun:6,june:6,jul:7,july:7,aug:8,august:8,sep:9,september:9,oct:10,october:10,nov:11,november:11,dec:12,december:12};
 function localizeShortDate(value){
@@ -222,6 +225,22 @@ function isComponentPropertyValueContext(element){
   }
   return false;
 }
+function isLayoutGuideCountAutoContext(element,normalized){
+  if(!element||!/^(?:auto|自动)$/i.test(normalized))return false;
+  if(element.closest?.('[class*="grid_settings--stripesNumSections--"]'))return true;
+  const dialog=element.closest?.('[role="dialog"]');
+  if(!dialog)return false;
+  const text=(dialog.textContent||'').trim().replace(/\s+/g,' ');
+  const hasGuideType=/(?:Layout guide type|布局参考线类型)/i.test(text);
+  const hasAmount=/(?:Amount|数量)/i.test(text);
+  const hasMargins=/(?:Margins|边距)/i.test(text);
+  const hasGutter=/(?:Gutter|间距)/i.test(text);
+  return hasGuideType&&hasAmount&&hasMargins&&hasGutter;
+}
+function isTypographyLineHeightAutoInput(element){
+  if(element?.tagName!=='INPUT'||!element.closest?.('[class*="type_panel--"]'))return false;
+  return /^(?:Line height|行高)$/i.test((element.getAttribute('aria-label')||'').trim());
+}
 function isExportQualityContext(element,normalized){
   if(!element||!shaderQualityNames.has(normalized.toLocaleLowerCase('en-US')))return false;
   if(element.closest?.('[aria-label*="quality" i],[data-testid*="quality" i],[class*="quality" i]'))return true;
@@ -275,9 +294,10 @@ function lookup(value,node){
   const iphoneDeviceColor=isIPhoneDeviceColorContext(element,normalized);
   const themeOption=isThemeOptionContext(element,normalized)||isAccountThemeContext(element,normalized);
   const libraryModeName=isLibraryModeNameContext(element,normalized);
+  const layoutGuideCountAuto=isLayoutGuideCountAutoContext(element,normalized);
   const ambiguousThemeName=normalized.toLocaleLowerCase('en-US')==='dark'||normalized.toLocaleLowerCase('en-US')==='light';
   const relativeTime=/^\d+\s+(?:seconds?|minutes?|hours?|days?|weeks?|months?|years?)\s+ago$/i.test(normalized)||/^\d+\s*[smhdw]\s+ago$/i.test(normalized);
-  if(isComponentPropertyValueContext(element))return undefined;
+  if(isComponentPropertyValueContext(element)&&!layoutGuideCountAuto)return undefined;
   if(isCompareListParameterContext(element,normalized))return undefined;
   if(isCodeSyntaxContext(element)&&!blendModeNormal&&!relativeTime)return undefined;
   if(libraryModeName||ambiguousThemeName&&!themeOption)return undefined;
@@ -289,6 +309,7 @@ function lookup(value,node){
   if(blendModeNormal)translated='正常';
   if(iphoneDeviceColor)translated=iphoneDeviceColorTranslations[normalized.toLocaleLowerCase('en-US')];
   if(themeOption)translated=themeOptionTranslations[normalized.toLocaleLowerCase('en-US')];
+  if(layoutGuideCountAuto)translated='自动';
   if(translated===trimmed||translated===normalized)translated=undefined;
   if(element?.closest?.(shaderPanelSelector)&&shaderOnlyMap[normalized])translated=shaderOnlyMap[normalized];
   if(!translated){
@@ -320,6 +341,9 @@ function lookup(value,node){
     else if(match=normalized.match(/^(\d+)\s+of\s+(\d+)$/i))translated=`${match[1]} / ${match[2]}`;
     else if(match=normalized.match(/^Step\s+(\d+)\s+of\s+(\d+)$/i))translated=`第 ${match[1]} 步，共 ${match[2]} 步`;
     else if(match=normalized.match(/^See all\s+(\d+)\s+colors?$/i))translated=`查看全部 ${match[1]} 种颜色`;
+    else if(match=normalized.match(/^Show\s+(\d+)\s+more lines? of code$/i))translated=`再显示 ${match[1]} 行代码`;
+    else if(match=normalized.match(/^Updating assets\s+(\d+)\s*\/\s*(\d+)$/i))translated=`正在更新资源 ${match[1]} / ${match[2]}`;
+    else if(match=normalized.match(/^Sweep\s+(-?\d+(?:\.\d+)?)%$/i))translated=`圆弧范围 ${match[1]}%`;
     else if(match=normalized.match(/^Connection error:\s*(-?\d+)$/i))translated=`连接错误：${match[1]}`;
     else if(match=normalized.match(/^Error code:\s*(-?\d+)$/i))translated=`错误代码：${match[1]}`;
     else if(match=normalized.match(/^Error navigating to ['“](.+?)['”]:\s*(ERR_[A-Z0-9_]+)$/i))translated=`导航至“${match[1]}”时出错：${match[2]}`;
@@ -331,7 +355,7 @@ function lookup(value,node){
       const unit={second:'秒',minute:'分钟',hour:'小时',day:'天',week:'周',month:'个月',year:'年'}[match[2].toLowerCase().replace(/s$/,'')];
       translated=`${match[1]}${unit}前查看`;
     }
-    else if(match=normalized.match(/^by\s+(.+)$/i))translated=`作者：${match[1]}`;
+    else if(match=normalized.match(/^by\s+([^,.!?]{1,80})$/i))translated=`作者：${match[1]}`;
     else if(match=normalized.match(/^Try in(?:\s+(.+?))?(?:\.{3}|…)?$/i))translated=match[1]?`在 ${match[1]} 中试用`:'试用…';
     else if(match=normalized.match(/^(\d+)\s+(?:person|people)\s+using\s+AI\s+credits$/i))translated=`${match[1]} 人正在使用 AI 额度`;
     else if(match=normalized.match(/^(\d+)\s+(?:person|people)\s+out\s+of\s+seat\s+credits$/i))translated=`${match[1]} 人的席位额度已用完`;
@@ -366,16 +390,61 @@ function applyTranslatedText(node,value,translated){
     element?.style?.setProperty('word-break','keep-all');
   }
   node.nodeValue=translated;
+  if(value.trim()==='Create component'&&translated.trim()==='创建组件'){
+    const row=node.parentElement?.parentElement;
+    const tooltip=row?.parentElement;
+    const rowIsShortcutTooltip=[...(row?.classList??[])].some(name=>name.startsWith('tooltip--textWithShortcut--'));
+    const tooltipIsContent=[...(tooltip?.classList??[])].some(name=>name.startsWith('tooltip--content--'));
+    if(rowIsShortcutTooltip&&tooltipIsContent){
+      const oldWidth=tooltip.getBoundingClientRect().width;
+      const oldLeft=Number.parseFloat(tooltip.style.left);
+      tooltip.style.width='max-content';
+      const newWidth=tooltip.getBoundingClientRect().width;
+      if(Number.isFinite(oldLeft)&&newWidth<oldWidth)tooltip.style.left=`${oldLeft+(oldWidth-newWidth)/2}px`;
+    }
+  }
+}
+function shouldTranslateAttribute(element,name){
+  return !(name==='data-tooltip'&&element?.getAttribute?.('data-tooltip-type')==='lookup');
+}
+function ensureControlledAutoOverlayStyle(){
+  if(document.getElementById(controlledAutoOverlayStyleId))return;
+  const style=document.createElement('style');
+  style.id=controlledAutoOverlayStyleId;
+  style.textContent=`[${controlledAutoOverlayAttribute}]{position:relative!important}[${controlledAutoOverlayAttribute}]>input{color:transparent!important;-webkit-text-fill-color:transparent!important;caret-color:transparent!important}[${controlledAutoOverlayAttribute}]::after{content:'自动';position:absolute;inset:0;display:flex;align-items:center;color:inherit;font:inherit;pointer-events:none}`;
+  (document.head||document.documentElement).appendChild(style);
+}
+function translateControlledAutoValue(element){
+  if(element?.tagName!=='INPUT')return;
+  const layoutGuideCount=!!element.closest?.('[class*="grid_settings--stripesNumSections--"]');
+  if(!layoutGuideCount&&!isTypographyLineHeightAutoInput(element))return;
+  const host=element.parentElement;
+  if(!host)return;
+  const sync=()=>{
+    if(!element.isConnected)return;
+    const showOverlay=element.value==='Auto'||element.value==='自动';
+    if(showOverlay)ensureControlledAutoOverlayStyle();
+    host.toggleAttribute(controlledAutoOverlayAttribute,showOverlay);
+  };
+  if(!controlledAutoInputs.has(element)){
+    controlledAutoInputs.add(element);
+    const refresh=()=>{
+      queueMicrotask(sync);
+      requestAnimationFrame(()=>requestAnimationFrame(sync));
+    };
+    for(const type of ['focus','click','input','change','blur'])element.addEventListener(type,refresh);
+  }
+  sync();
 }
 function translateNode(node){
   if(!node)return;
   if(node.nodeType===Node.TEXT_NODE){const value=node.nodeValue;const translated=lookup(value,node);if(translated&&translated!==value)applyTranslatedText(node,value,translated);return;}
   if(node.nodeType!==Node.ELEMENT_NODE&&node.nodeType!==Node.DOCUMENT_FRAGMENT_NODE)return;
-  if(node.nodeType===Node.ELEMENT_NODE){for(const name of attrs){const value=node.getAttribute(name);const translated=value&&lookup(value,node);if(translated&&translated!==value)node.setAttribute(name,translated);}}
+  if(node.nodeType===Node.ELEMENT_NODE){translateControlledAutoValue(node);for(const name of attrs){if(!shouldTranslateAttribute(node,name))continue;const value=node.getAttribute(name);const translated=value&&lookup(value,node);if(translated&&translated!==value)node.setAttribute(name,translated);}}
   const walker=document.createTreeWalker(node,NodeFilter.SHOW_ELEMENT|NodeFilter.SHOW_TEXT);
   let current;while(current=walker.nextNode()){
     if(current.nodeType===Node.TEXT_NODE){const value=current.nodeValue;const translated=lookup(value,current);if(translated&&translated!==value)applyTranslatedText(current,value,translated);}
-    else for(const name of attrs){const value=current.getAttribute(name);const translated=value&&lookup(value,current);if(translated&&translated!==value)current.setAttribute(name,translated);}
+    else{translateControlledAutoValue(current);for(const name of attrs){if(!shouldTranslateAttribute(current,name))continue;const value=current.getAttribute(name);const translated=value&&lookup(value,current);if(translated&&translated!==value)current.setAttribute(name,translated);}}
   }
 }
 function collectMutationRoots(records){

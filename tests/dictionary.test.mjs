@@ -116,7 +116,6 @@ test("关键累积翻译不会被后续更新覆盖", () => {
     "Cross": "十字形",
     "Ring": "圆环",
     "Brick": "砖块",
-    "Hex": "六边形",
     "Shader fills": "着色器填充",
     "Rotate 90º": "旋转 90°",
     "Rotate 90˚": "旋转 90°",
@@ -170,7 +169,104 @@ test("关键累积翻译不会被后续更新覆盖", () => {
     "For help, visit help.figma.com or contact support@figma.com.": "如需帮助，请访问 help.figma.com 或联系 support@figma.com。",
     "For help, visit": "如需帮助，请访问",
     "or contact": "或联系",
-    "Simplify Stroke": "简化描边"
+    "Simplify Stroke": "简化描边",
+    "Play": "播放",
+    "Current time": "当前时间",
+    "Change time format": "更改时间格式",
+    "Arc": "弧形",
+    "Bezier": "贝塞尔曲线",
+    "Bounce": "弹跳",
+    "Ratio": "比例",
+    "Motion Rotation": "运动旋转",
+    "Motion Translation X": "运动位移 X",
+    "Motion Translation Y": "运动位移 Y",
+    "Separate dimensions": "分离维度",
+    "Sweep": "圆弧范围",
+    "Animations": "动画",
+    "Distance": "距离",
+    "From left": "从左侧",
+    "From right": "从右侧",
+    "From top": "从顶部",
+    "From bottom": "从底部",
+    "From top left": "从左上方",
+    "From top right": "从右上方",
+    "From bottom left": "从左下方",
+    "From bottom right": "从右下方",
+    "To left": "向左",
+    "To right": "向右",
+    "To top": "向上",
+    "To bottom": "向下",
+    "To top left": "向左上方",
+    "To top right": "向右上方",
+    "To bottom left": "向左下方",
+    "To bottom right": "向右下方",
+    "Motion Scale X": "运动缩放 X",
+    "Motion Scale Y": "运动缩放 Y",
+    "Path Trim Start": "路径修剪起点",
+    "Path Trim End": "路径修剪终点",
+    "Path": "路径",
+    "Add stroke fill": "添加描边填充",
+    "Edit anchor point": "编辑锚点",
+    "Collapse timeline": "收起时间轴",
+    "Open help": "打开帮助",
+    "Set up third-party agents for Figma MCP": "为 Figma MCP 配置第三方智能体",
+    "Layer options": "图层选项",
+    "Copy URL for selected layer": "复制所选图层的 URL",
+    "Copy Layout, press shift to copy all code": "复制布局，按住 Shift 可复制全部代码",
+    "Copy Style, press shift to copy all code": "复制样式，按住 Shift 可复制全部代码",
+    "Copy SVG, press shift to copy all code": "复制 SVG，按住 Shift 可复制全部代码",
+    "Export file type": "导出文件类型",
+    "Download animations": "下载动画",
+    "Download icons": "下载图标",
+    "Download all icons": "下载全部图标",
+    "Icon download settings...": "图标下载设置…",
+    "Icon download settings…": "图标下载设置…",
+    "Download all animations": "下载全部动画",
+    "Animation download settings...": "动画下载设置…",
+    "Animation download settings…": "动画下载设置…",
+    "Icon settings": "图标设置",
+    "Animation settings": "动画设置",
+    "Keyframes": "关键帧",
+    "Copy Keyframes, press shift to copy all code": "复制关键帧，按住 Shift 可复制全部代码",
+    "Re-center": "重新居中",
+    "Show in timeline view": "在时间轴视图中显示",
+    "Frame with animation": "带动画的画框",
+    "Open in timeline view": "在时间轴视图中打开",
+    "Copied to clipboard. Now paste into your AI agent chat.": "已复制到剪贴板。现在粘贴到 AI 智能体对话中。",
+    "Copy HStack, press shift to copy all code": "复制 HStack，按住 Shift 可复制全部代码",
+    "Copy UIKit, press shift to copy all code": "复制 UIKit，按住 Shift 可复制全部代码",
+    "Copy Modifier, press shift to copy all code": "复制 Modifier，按住 Shift 可复制全部代码",
+    "Copy XML, press shift to copy all code": "复制 XML，按住 Shift 可复制全部代码",
+    "Upload local fonts": "上传本地字体",
+    "Individual strokes": "独立描边",
+    "TrueType Collection files (.ttc) are not supported": "不支持 TrueType Collection（.ttc）文件",
+    "Select items using this font": "选择使用此字体的项目",
+    "By checking this box and uploading the font(s), I represent that I have all necessary rights to upload and authorize storage and use of the uploaded font(s) on the Figma platform.": "勾选此框并上传字体，即表示本人声明拥有上传该字体所需的一切必要权利，并授权 Figma 平台存储和使用所上传的字体。",
+    "Successfully updated assets": "已成功更新资源",
+    "Dictate": "听写",
+    "Create component": "创建组件",
+    "Create with agents": "使用智能体创建",
+    "Open in Community": "在社区中打开",
+    "Provide text and structure for assistive technologies in Figma Design, FigJam, Slides, and Buzz.": "为 Figma Design、FigJam、Slides 和 Buzz 中的辅助技术提供文本和结构。",
+    "Uses your system settings": "使用系统设置",
+    "Underline links in UI": "为界面中的链接添加下划线",
+    "Distinguish links with an underline in panels and dialogs. Design content won’t change.": "在面板和对话框中使用下划线区分链接。设计内容不会改变。",
+    "Simplify focus navigation in Actions menu": "简化“操作”菜单中的焦点导航",
+    "Focus follows default tab stops.": "焦点按默认 Tab 键顺序移动。",
+    "(Recommended for screen readers.)": "（建议屏幕阅读器用户启用。）",
+    "Enhanced contrast mode": "增强对比度模式",
+    "Contrast between text and controls and their backgrounds will be increased.": "提高文本、控件与其背景之间的对比度。",
+    "Ignore Figma shortcuts in text fields": "在文本字段中忽略 Figma 快捷键",
+    "Using special characters in text fields will not trigger Figma shortcuts.": "在文本字段中使用特殊字符不会触发 Figma 快捷键。",
+    "Rotate layers with a keyboard shortcut": "使用键盘快捷键旋转图层",
+    "⌘⌥↑ and ⌘⌥↓ will rotate layers instead of moving them forward and back.": "⌘⌥↑ 和 ⌘⌥↓ 将旋转图层，而不是将其前移或后移。",
+    "Automatically follow a spotlight": "自动跟随演示",
+    "When a collaborator spotlights themselves, you'll automatically follow them on your screen.": "当协作者开始演示时，您会在屏幕上自动跟随对方。",
+    "Search for and insert components without losing your flow.": "无需中断工作流即可搜索并插入组件。",
+    "Unlock scale aspect ratio": "解锁缩放宽高比",
+    "Timeline zoom level": "时间轴缩放级别",
+    "Style": "样式",
+    "Position": "位置"
   };
   for (const [source, target] of Object.entries(expected)) assert.equal(dictionary[source], target, source);
 });
@@ -232,6 +328,7 @@ test("iPhone 设备预设颜色使用 Apple 中国大陆官方名称", () => {
 test("专业名词与代码内容的保护规则仍存在", () => {
   assert.equal(dictionary.RGB, undefined);
   assert.equal(dictionary.CSS, undefined);
+  assert.equal(dictionary["border-box"], undefined);
   assert.equal(dictionary.Bold, undefined);
   assert.match(runtime, /isCodeSyntaxContext/);
   assert.match(runtime, /isFontWeightContext/);
@@ -243,9 +340,41 @@ test("专业名词与代码内容的保护规则仍存在", () => {
   for (const userName of ["if", "else", "Not", "App", "to"]) assert.equal(dictionary[userName], undefined, userName);
   assert.doesNotMatch(runtime, /interactionConditionalTranslations|isInteractionConditionContext/);
   assert.match(runtime, /isExportQualityContext/);
+  assert.match(runtime, /isLayoutGuideCountAutoContext/);
+  assert.match(runtime, /grid_settings--stripesNumSections--/);
+  assert.equal(dictionary.Auto, '自动');
+  assert.match(runtime, /isTypographyLineHeightAutoInput/);
+  assert.match(runtime, /\^\(\?:Line height\|行高\)\$/);
+  assert.match(runtime, /type_panel--/);
+  assert.match(runtime, /isComponentPropertyValueContext\(element\)&&!layoutGuideCountAuto/);
+  assert.match(runtime, /if\(layoutGuideCountAuto\)translated='自动'/);
+  assert.match(runtime, /translateControlledAutoValue/);
+  assert.match(runtime, /controlledAutoInputs=new WeakSet/);
+  assert.match(runtime, /controlledAutoOverlayAttribute='data-figma-cn-controlled-auto'/);
+  assert.match(runtime, /ensureControlledAutoOverlayStyle/);
+  assert.match(runtime, /showOverlay=element\.value==='Auto'\|\|element\.value==='自动'/);
+  assert.match(runtime, /host\.toggleAttribute\(controlledAutoOverlayAttribute,showOverlay\)/);
+  assert.match(runtime, /for\(const type of \['focus','click','input','change','blur'\]\)element\.addEventListener\(type,refresh\)/);
+  assert.match(runtime, /queueMicrotask/);
+  assert.match(runtime, /requestAnimationFrame\(\(\)=>requestAnimationFrame\(sync\)\)/);
+  assert.doesNotMatch(runtime, /element\.value='自动'/);
+  assert.doesNotMatch(runtime, /addEventListener\('(?:mouse|pointer)move'/);
+  assert.doesNotMatch(runtime, /addEventListener\('pointerover'/);
+  assert.doesNotMatch(runtime, /document\.addEventListener\((?:'|")click/);
+  assert.ok(runtime.includes("normalized.match(/^by\\s+([^,.!?]{1,80})$/i)"));
+  assert.doesNotMatch(runtime, /\^by\\s\+\(\.\+\)\$/);
+  assert.match(runtime, /function shouldTranslateAttribute/);
+  assert.match(runtime, /name==='data-tooltip'&&element\?\.getAttribute\?\.\('data-tooltip-type'\)==='lookup'/);
+  assert.doesNotMatch(runtime, /value\.trim\(\)==='Style'&&translated\.trim\(\)==='样式'/);
+  assert.match(runtime, /value\.trim\(\)==='Create component'&&translated\.trim\(\)==='创建组件'/);
+  assert.match(runtime, /tooltip\.style\.width='max-content'/);
+  assert.match(runtime, /oldLeft\+\(oldWidth-newWidth\)\/2/);
   assert.match(runtime, /text\.length<=220&&\(text\.includes\('quality'\)\|\|text\.includes\('质量'\)\)/);
   assert.match(runtime, /!shaderQuality&&!exportQuality/);
   assert.match(runtime, /\^See all\\s\+\(\\d\+\)\\s\+colors/);
+  assert.match(runtime, /\^Show\\s\+\(\\d\+\)\\s\+more lines/);
+  assert.match(runtime, /\^Updating assets\\s\+\(\\d\+\)\\s\*/);
+  assert.match(runtime, /\^Sweep\\s\+/);
   assert.match(runtime, /\^Connection error:/);
   assert.match(runtime, /\^Error code:/);
   assert.match(runtime, /Error navigating to/);
@@ -265,8 +394,11 @@ test("组件属性值保留用户手动命名", () => {
   assert.doesNotMatch(runtime, /data-testid\*="component-properties"/);
   assert.doesNotMatch(runtime, /__reactFiber\$/);
   assert.match(runtime, /isComponentPropertyValueContext/);
-  assert.match(runtime, /if\(isComponentPropertyValueContext\(element\)\)return undefined/);
+  assert.match(runtime, /if\(isComponentPropertyValueContext\(element\)&&!layoutGuideCountAuto\)return undefined/);
   assert.doesNotMatch(runtime, /componentPanelSystem|invalidVariantName|This layer has an invalid name/);
+  for (const userName of ["Hex", "Hexagon", "Hexagonal"]) assert.equal(dictionary[userName], undefined, userName);
+  assert.doesNotMatch(runtime, /"Hexagon":"六边形","Lines"/);
+  assert.match(runtime, /shaderOnlyMap=.*"Hex":"六边形","Hexagon":"六边形","Hexagonal":"六边形"/);
 });
 
 test("原生标签页菜单使用固定与取消固定", () => {
