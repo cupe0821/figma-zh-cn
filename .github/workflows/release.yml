@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag, e.g. v126.6.14-cn.1"
+        description: "Release tag, e.g. v126.7.8-cn.1"
         required: true
   push:
     tags:
@@ -73,8 +73,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          VERSION_NOTES="$(node -p "require('./manifests/126.6.14.json').notes")"
-          RELEASE_NOTES_PREFIX="$(printf '## 更新说明\n\n%s\n\n以下提交与 PR 由 GitHub 自动汇总。\n\n> 非官方 Figma 简体中文本地维护包。只包含翻译与补丁工具，不包含 Figma 应用。macOS Intel 与 Apple Silicon 已实机验证；Windows 平台在实机验收前标记为预览。' "$VERSION_NOTES")"
+          VERSION_NOTES="$(node -p "require('./manifests/126.7.8.json').notes")"
+          RELEASE_NOTES_PREFIX="$(printf '## 更新说明\n\n%s\n\n以下提交与 PR 由 GitHub 自动汇总。\n\n> 非官方 Figma 简体中文本地维护包。只包含翻译与补丁工具，不包含 Figma 应用。平台验证状态以当前版本清单为准。' "$VERSION_NOTES")"
           gh release create "${{ steps.tag.outputs.value }}" \
             release/* \
             --repo "${{ github.repository }}" \

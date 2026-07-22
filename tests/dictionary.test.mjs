@@ -22,6 +22,8 @@ test("关键累积翻译不会被后续更新覆盖", () => {
     "Change colors": "更改颜色",
     "Add object": "添加对象",
     "Checking for changes": "正在检查更改",
+    "Loading comments...": "正在加载评论…",
+    "Loading comments…": "正在加载评论…",
     "Pasting…": "正在粘贴…",
     "Recent chats": "最近对话",
     "Design next user screen": "设计下一个用户界面",
@@ -68,6 +70,7 @@ test("关键累积翻译不会被后续更新覆盖", () => {
     "what products are included in each seat.": "每种席位包含哪些产品。",
     "Enable closed captioning when using audio inside your files.": "在文件中使用音频时启用隐藏式字幕。",
     "Your uploaded fonts": "您上传的字体",
+    "Uploaded by you": "您上传的字体",
     "Upload fonts for your personal use. These fonts will be available across the files you view or edit.": "上传字体供个人使用。这些字体将在您查看或编辑的所有文件中可用。",
     "Upload font": "上传字体",
     "You can see teammates’ history in your files, and they can see yours. (Recommended for collaboration and transparency.)": "您可以在文件中查看队友的历史记录，他们也可以查看您的历史记录。（推荐用于协作和透明。）",
@@ -265,6 +268,11 @@ test("关键累积翻译不会被后续更新覆盖", () => {
     "Search for and insert components without losing your flow.": "无需中断工作流即可搜索并插入组件。",
     "Unlock scale aspect ratio": "解锁缩放宽高比",
     "Timeline zoom level": "时间轴缩放级别",
+    "Variable font axes...": "可变字体轴…",
+    "Variable font axes…": "可变字体轴…",
+    "No truncation": "不截断文本",
+    "Truncation enabled": "已启用文本截断",
+    "Enabled": "已启用",
     "Style": "样式",
     "Position": "位置"
   };
@@ -312,7 +320,7 @@ test("iPhone 设备预设颜色使用 Apple 中国大陆官方名称", () => {
   assert.match(runtime, /"Cosmic Orange":"星宇橙色"/);
   assert.match(runtime, /isIPhoneDeviceColorContext/);
   assert.match(runtime, /iphoneDeviceColorTranslations=\{black:'黑色',white:'白色'\}/);
-  assert.match(runtime, /!iphoneDeviceColor&&!themeOption&&isFontWeightContext/);
+  assert.match(runtime, /!iphoneDeviceColor&&!themeOption&&!directTooltip&&isFontWeightContext/);
   assert.match(runtime, /isThemeOptionContext/);
   assert.match(runtime, /themeOptionTranslations=\{dark:'黑色',light:'浅色'\}/);
   assert.match(runtime, /isAccountThemeContext/);
@@ -330,8 +338,10 @@ test("专业名词与代码内容的保护规则仍存在", () => {
   assert.equal(dictionary.CSS, undefined);
   assert.equal(dictionary["border-box"], undefined);
   assert.equal(dictionary.Bold, undefined);
+  assert.equal(dictionary.Standard, "标准");
   assert.match(runtime, /isCodeSyntaxContext/);
   assert.match(runtime, /isFontWeightContext/);
+  assert.match(runtime, /fontWeightNames=new Set\(\[[^\]]*'standard'/);
   assert.match(runtime, /isBlendModeNormalContext/);
   assert.match(runtime, /isShaderQualityPopup/);
   assert.match(runtime, /\(\?:auto\|自动\)/);
@@ -364,7 +374,7 @@ test("专业名词与代码内容的保护规则仍存在", () => {
   assert.ok(runtime.includes("normalized.match(/^by\\s+([^,.!?]{1,80})$/i)"));
   assert.doesNotMatch(runtime, /\^by\\s\+\(\.\+\)\$/);
   assert.match(runtime, /function shouldTranslateAttribute/);
-  assert.match(runtime, /name==='data-tooltip'&&element\?\.getAttribute\?\.\('data-tooltip-type'\)==='lookup'/);
+  assert.match(runtime, /name!=='data-tooltip'\|\|element\?\.getAttribute\?\.\('data-tooltip-type'\)!=='lookup'/);
   assert.doesNotMatch(runtime, /value\.trim\(\)==='Style'&&translated\.trim\(\)==='样式'/);
   assert.match(runtime, /value\.trim\(\)==='Create component'&&translated\.trim\(\)==='创建组件'/);
   assert.match(runtime, /tooltip\.style\.width='max-content'/);
@@ -394,7 +404,7 @@ test("组件属性值保留用户手动命名", () => {
   assert.doesNotMatch(runtime, /data-testid\*="component-properties"/);
   assert.doesNotMatch(runtime, /__reactFiber\$/);
   assert.match(runtime, /isComponentPropertyValueContext/);
-  assert.match(runtime, /if\(isComponentPropertyValueContext\(element\)&&!layoutGuideCountAuto\)return undefined/);
+  assert.match(runtime, /if\(isComponentPropertyValueContext\(element\)&&!layoutGuideCountAuto&&!directTooltip\)return undefined/);
   assert.doesNotMatch(runtime, /componentPanelSystem|invalidVariantName|This layer has an invalid name/);
   for (const userName of ["Hex", "Hexagon", "Hexagonal"]) assert.equal(dictionary[userName], undefined, userName);
   assert.doesNotMatch(runtime, /"Hexagon":"六边形","Lines"/);
@@ -404,6 +414,18 @@ test("组件属性值保留用户手动命名", () => {
 test("原生标签页菜单使用固定与取消固定", () => {
   assert.equal(menuDictionary.Pin, "固定");
   assert.equal(menuDictionary.Unpin, "取消固定");
+});
+
+test("排版与组件设置的重叠提示统一翻译", () => {
+  assert.equal(dictionary["Bulleted list"], "无序列表");
+  assert.equal(dictionary["Numbered list"], "有序列表");
+  assert.match(runtime, /directTooltipTranslations=\{'Bold':'加粗','Italic':'斜体','Strikethrough':'删除线','Header 1':'标题 1','Link':'链接','Code':'代码','Code block':'代码块','Standard':'标准'\}/);
+  assert.match(runtime, /function localizeDirectTooltip/);
+  assert.match(runtime, /translated\+normalized\.slice\(label\.length\)/);
+  assert.match(runtime, /isComponentPropertyValueContext\(element\).*&&!directTooltip/);
+  assert.match(runtime, /isCodeSyntaxContext\(element\).*&&!directTooltip/);
+  assert.match(runtime, /!directTooltip&&isFontWeightContext/);
+  assert.doesNotMatch(runtime, /typographyPanelSelector|isTypographyPanelListTooltipContext|isVerticalTrimStandardContext/);
 });
 
 test("翻译加载器包含防重复和动态界面处理", () => {

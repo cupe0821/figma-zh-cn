@@ -49,7 +49,7 @@ delete map['BW dark'];
 const ciMap=new Map(Object.entries(map).map(([key,value])=>[key.toLocaleLowerCase('en-US'),value]));
 const shaderOnlyMap={"X":"横向","Y":"纵向","R":"半径","A":"角度","Light":"光照","Hex":"六边形","Hexagon":"六边形","Hexagonal":"六边形"};
 const generatedLayerMap={frame:'画框',rectangle:'矩形',ellipse:'椭圆',polygon:'多边形',star:'星形',line:'直线',vector:'矢量',group:'组',section:'分区',component:'组件',instance:'实例',text:'文本'};
-const fontWeightNames=new Set(['thin','hairline','extra light','ultra light','light','book','regular','roman','normal','medium','semi bold','semibold','demi bold','demibold','bold','extra bold','extrabold','ultra bold','heavy','black','extra black','italic','oblique','bold italic']);
+const fontWeightNames=new Set(['thin','hairline','extra light','ultra light','light','book','regular','roman','normal','medium','standard','semi bold','semibold','demi bold','demibold','bold','extra bold','extrabold','ultra bold','heavy','black','extra black','italic','oblique','bold italic']);
 const colorSpaceNames=new Set(['rgb','cmyk','bw light','bw dark','srgb','linear','oklab','lab','lch','oklch','display p3','p3','hsl','hsv','hsb']);
 const shaderQualityNames=new Set(['low','medium','high']);
 const iphoneDeviceColorTranslations={black:'黑色',white:'白色'};
@@ -73,6 +73,7 @@ const componentPropertyControlSelector='[data-testid*="component-property" i],[d
 const componentUserNameSelector='[data-testid*="component-name" i],[data-testid*="variant-name" i],[data-testid*="property-name" i],[data-testid*="property-value" i],[data-testid*="component-property-option" i],[data-testid*="variant-option" i],[data-testid*="instance-property-option" i],[aria-label*="component name" i],[aria-label*="variant name" i],[aria-roledescription*="component property" i],[aria-roledescription*="variant property" i],[data-node-type="COMPONENT" i],[data-node-type="INSTANCE" i]';
 const componentPropertyValueSignatures=[['listening'],['speaking'],['offline'],['disabled','已禁用'],['thinking','思考中'],['idle'],['loading','正在加载','加载中']];
 const componentPropertyValuePairSignatures=[[['default','默认'],['scrolled']]];
+const directTooltipTranslations={'Bold':'加粗','Italic':'斜体','Strikethrough':'删除线','Header 1':'标题 1','Link':'链接','Code':'代码','Code block':'代码块','Standard':'标准'};
 const controlledAutoInputs=new WeakSet();
 const controlledAutoOverlayAttribute='data-figma-cn-controlled-auto';
 const controlledAutoOverlayStyleId='figma-cn-controlled-auto-style';
@@ -113,6 +114,13 @@ function isFontWeightContext(element,normalized){
   }
   if(weights.size>=2)return true;
   return false;
+}
+function localizeDirectTooltip(element,normalized){
+  if(!element?.hasAttribute?.('data-tooltip'))return undefined;
+  for(const [label,translated] of Object.entries(directTooltipTranslations)){
+    if(normalized===label||normalized.startsWith(`${label} `))return translated+normalized.slice(label.length);
+  }
+  return undefined;
 }
 function isIPhoneDeviceColorContext(element,normalized){
   const color=normalized.toLocaleLowerCase('en-US');
@@ -295,17 +303,18 @@ function lookup(value,node){
   const themeOption=isThemeOptionContext(element,normalized)||isAccountThemeContext(element,normalized);
   const libraryModeName=isLibraryModeNameContext(element,normalized);
   const layoutGuideCountAuto=isLayoutGuideCountAutoContext(element,normalized);
+  const directTooltip=localizeDirectTooltip(element,normalized);
   const ambiguousThemeName=normalized.toLocaleLowerCase('en-US')==='dark'||normalized.toLocaleLowerCase('en-US')==='light';
   const relativeTime=/^\d+\s+(?:seconds?|minutes?|hours?|days?|weeks?|months?|years?)\s+ago$/i.test(normalized)||/^\d+\s*[smhdw]\s+ago$/i.test(normalized);
-  if(isComponentPropertyValueContext(element)&&!layoutGuideCountAuto)return undefined;
+  if(isComponentPropertyValueContext(element)&&!layoutGuideCountAuto&&!directTooltip)return undefined;
   if(isCompareListParameterContext(element,normalized))return undefined;
-  if(isCodeSyntaxContext(element)&&!blendModeNormal&&!relativeTime)return undefined;
+  if(isCodeSyntaxContext(element)&&!blendModeNormal&&!relativeTime&&!directTooltip)return undefined;
   if(libraryModeName||ambiguousThemeName&&!themeOption)return undefined;
   const shaderQuality=shaderQualityNames.has(normalized.toLocaleLowerCase('en-US'))&&(element?.closest?.(shaderPanelSelector)||isShaderQualityPopup(element,normalized));
   const exportQuality=isExportQualityContext(element,normalized);
-  if(!blendModeNormal&&!shaderQuality&&!exportQuality&&!iphoneDeviceColor&&!themeOption&&isFontWeightContext(element,normalized))return undefined;
+  if(!blendModeNormal&&!shaderQuality&&!exportQuality&&!iphoneDeviceColor&&!themeOption&&!directTooltip&&isFontWeightContext(element,normalized))return undefined;
   if(isColorSpaceContext(element,normalized))return undefined;
-  let translated=map[trimmed]??map[normalized]??ciMap.get(trimmed.toLocaleLowerCase('en-US'))??ciMap.get(normalized.toLocaleLowerCase('en-US'));
+  let translated=directTooltip??map[trimmed]??map[normalized]??ciMap.get(trimmed.toLocaleLowerCase('en-US'))??ciMap.get(normalized.toLocaleLowerCase('en-US'));
   if(blendModeNormal)translated='正常';
   if(iphoneDeviceColor)translated=iphoneDeviceColorTranslations[normalized.toLocaleLowerCase('en-US')];
   if(themeOption)translated=themeOptionTranslations[normalized.toLocaleLowerCase('en-US')];
@@ -405,7 +414,7 @@ function applyTranslatedText(node,value,translated){
   }
 }
 function shouldTranslateAttribute(element,name){
-  return !(name==='data-tooltip'&&element?.getAttribute?.('data-tooltip-type')==='lookup');
+  return name!=='data-tooltip'||element?.getAttribute?.('data-tooltip-type')!=='lookup';
 }
 function ensureControlledAutoOverlayStyle(){
   if(document.getElementById(controlledAutoOverlayStyleId))return;

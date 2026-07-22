@@ -1,0 +1,14 @@
+{
+  "figmaVersion": "126.7.8",
+  "translationVersion": "126.7.8-cn.1",
+  "dictionaryEntries": 4610,
+  "loaderModule": "fg01",
+  "bootstrap": "require(\"fg01\");",
+  "platforms": {
+    "macos-x64": "tested",
+    "macos-arm64": "preview",
+    "windows-x64": "preview",
+    "windows-arm64": "preview"
+  },
+  "notes": "升级适配 Figma 126.7.8，累计词典扩展至 4610 条；新增评论加载提示，并整合近期补充的字体、排版、动画、时间轴、导出、无障碍、连接器及系统提示翻译。富文本工具提示保留快捷键并使用统一术语，无序列表与有序列表在重叠入口保持一致；继续保护组件与用户命名、代码与 CSS、字体名称和字重、色彩空间等专业内容。macOS Intel 已在 Figma 126.7.8 实机验证，macOS Apple Silicon 与 Windows x64、ARM64 使用同源构建流程并标记为预览，待对应平台实机复验。"
+}
