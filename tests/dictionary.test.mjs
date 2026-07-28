@@ -24,6 +24,14 @@ test("关键累积翻译不会被后续更新覆盖", () => {
     "Checking for changes": "正在检查更改",
     "Loading comments...": "正在加载评论…",
     "Loading comments…": "正在加载评论…",
+    "Resized height to 16:9": "高度已调整为 16:9",
+    "Sorry, I can't build a prototype yet.": "抱歉，我还无法构建原型。",
+    "For now, add interactions in your Prototyping tab or send this to Figma Make.": "目前，请在“原型”选项卡中添加交互，或将其发送到 Figma Make。",
+    "Copy debug details": "复制调试详情",
+    "Send this to support when filing a ticket — it helps us find your exact session.": "提交工单时将其发送给支持团队，这有助于我们找到你的确切会话。",
+    "Support ID": "支持 ID",
+    "Worked for 30s": "运行了 30 秒",
+    "Keep it": "保留",
     "Pasting…": "正在粘贴…",
     "Recent chats": "最近对话",
     "Design next user screen": "设计下一个用户界面",
@@ -186,6 +194,8 @@ test("关键累积翻译不会被后续更新覆盖", () => {
     "Separate dimensions": "分离维度",
     "Sweep": "圆弧范围",
     "Animations": "动画",
+    "Shared with": "共享对象",
+    "You directly": "直接与您共享",
     "Distance": "距离",
     "From left": "从左侧",
     "From right": "从右侧",
@@ -376,14 +386,23 @@ test("专业名词与代码内容的保护规则仍存在", () => {
   assert.match(runtime, /function shouldTranslateAttribute/);
   assert.match(runtime, /name!=='data-tooltip'\|\|element\?\.getAttribute\?\.\('data-tooltip-type'\)!=='lookup'/);
   assert.doesNotMatch(runtime, /value\.trim\(\)==='Style'&&translated\.trim\(\)==='样式'/);
-  assert.match(runtime, /value\.trim\(\)==='Create component'&&translated\.trim\(\)==='创建组件'/);
+  assert.match(runtime, /compactTooltipSourceLabels=new Set\(\['Create component','Visual search'\]\)/);
+  assert.match(runtime, /compactMotionTooltipAttribute='data-figma-cn-compact-motion-tooltip'/);
+  assert.match(runtime, /normalized!==\'动画测试\'/);
+  assert.match(runtime, /style\.setProperty\('width',getComputedStyle\(tooltip\)\.width,'important'\)/);
+  assert.match(runtime, /function compactTranslatedTooltip/);
   assert.match(runtime, /tooltip\.style\.width='max-content'/);
+  assert.match(runtime, /tooltip\.style\.minWidth='0'/);
   assert.match(runtime, /oldLeft\+\(oldWidth-newWidth\)\/2/);
   assert.match(runtime, /text\.length<=220&&\(text\.includes\('quality'\)\|\|text\.includes\('质量'\)\)/);
   assert.match(runtime, /!shaderQuality&&!exportQuality/);
   assert.match(runtime, /\^See all\\s\+\(\\d\+\)\\s\+colors/);
   assert.match(runtime, /\^Show\\s\+\(\\d\+\)\\s\+more lines/);
   assert.match(runtime, /\^Updating assets\\s\+\(\\d\+\)\\s\*/);
+  assert.match(runtime, /\^Loading\\s\+\(\\d\+\)\\s\+pages\\s\+for\\s\+plugin/);
+  assert.match(runtime, /\^Resized height to\\s\+\(\.\+\)\$/);
+  assert.match(runtime, /\^Worked\\s\+for\\s\+\(\\d\+\)s\$/);
+  assert.match(runtime, /This prompt uses\\s\+\(\\d\+\)\\s\+AI credits while in beta/);
   assert.match(runtime, /\^Sweep\\s\+/);
   assert.match(runtime, /\^Connection error:/);
   assert.match(runtime, /\^Error code:/);

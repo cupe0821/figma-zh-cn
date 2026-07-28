@@ -74,6 +74,8 @@ const componentUserNameSelector='[data-testid*="component-name" i],[data-testid*
 const componentPropertyValueSignatures=[['listening'],['speaking'],['offline'],['disabled','已禁用'],['thinking','思考中'],['idle'],['loading','正在加载','加载中']];
 const componentPropertyValuePairSignatures=[[['default','默认'],['scrolled']]];
 const directTooltipTranslations={'Bold':'加粗','Italic':'斜体','Strikethrough':'删除线','Header 1':'标题 1','Link':'链接','Code':'代码','Code block':'代码块','Standard':'标准'};
+const compactTooltipSourceLabels=new Set(['Create component','Visual search']);
+const compactMotionTooltipAttribute='data-figma-cn-compact-motion-tooltip';
 const controlledAutoInputs=new WeakSet();
 const controlledAutoOverlayAttribute='data-figma-cn-controlled-auto';
 const controlledAutoOverlayStyleId='figma-cn-controlled-auto-style';
@@ -351,7 +353,11 @@ function lookup(value,node){
     else if(match=normalized.match(/^Step\s+(\d+)\s+of\s+(\d+)$/i))translated=`第 ${match[1]} 步，共 ${match[2]} 步`;
     else if(match=normalized.match(/^See all\s+(\d+)\s+colors?$/i))translated=`查看全部 ${match[1]} 种颜色`;
     else if(match=normalized.match(/^Show\s+(\d+)\s+more lines? of code$/i))translated=`再显示 ${match[1]} 行代码`;
+    else if(match=normalized.match(/^Loading\s+(\d+)\s+pages\s+for\s+plugin(?:\.{3}|…)?$/i))translated=`正在为插件加载 ${match[1]} 个页面…`;
     else if(match=normalized.match(/^Updating assets\s+(\d+)\s*\/\s*(\d+)$/i))translated=`正在更新资源 ${match[1]} / ${match[2]}`;
+    else if(match=normalized.match(/^Resized height to\s+(.+)$/i))translated=`高度已调整为 ${match[1]}`;
+    else if(match=normalized.match(/^Worked\s+for\s+(\d+)s$/i))translated=`运行了 ${match[1]} 秒`;
+    else if(match=normalized.match(/^This prompt uses\s+(\d+)\s+AI credits while in beta\. After beta, it will use\s+(\d+)\s+credits\.$/i))translated=`此提示在测试期间使用 ${match[1]} 点 AI 额度。测试结束后将使用 ${match[2]} 点额度。`;
     else if(match=normalized.match(/^Sweep\s+(-?\d+(?:\.\d+)?)%$/i))translated=`圆弧范围 ${match[1]}%`;
     else if(match=normalized.match(/^Connection error:\s*(-?\d+)$/i))translated=`连接错误：${match[1]}`;
     else if(match=normalized.match(/^Error code:\s*(-?\d+)$/i))translated=`错误代码：${match[1]}`;
@@ -392,6 +398,36 @@ function lookup(value,node){
   }
   return translated&&translated!==trimmed&&translated!==normalized?leading+translated+trailing:undefined;
 }
+function compactTranslatedTooltip(node,value){
+  if(!compactTooltipSourceLabels.has(value.trim()))return;
+  let tooltip=node.parentElement;
+  for(let depth=0;tooltip&&depth<8;depth+=1,tooltip=tooltip.parentElement){
+    const tooltipIsContent=tooltip.getAttribute?.('role')==='tooltip'||[...(tooltip.classList??[])].some(name=>name.startsWith('tooltip--content--'));
+    if(!tooltipIsContent)continue;
+    const oldWidth=tooltip.getBoundingClientRect().width;
+    const oldLeft=Number.parseFloat(tooltip.style.left);
+    tooltip.style.width='max-content';
+    tooltip.style.minWidth='0';
+    const newWidth=tooltip.getBoundingClientRect().width;
+    if(Number.isFinite(oldLeft)&&newWidth<oldWidth)tooltip.style.left=`${oldLeft+(oldWidth-newWidth)/2}px`;
+    return;
+  }
+}
+function compactMotionBetaTooltip(node){
+  const element=node?.nodeType===Node.ELEMENT_NODE?node:node?.parentElement;
+  const tooltip=element?.closest?.('[data-is-the-tooltip]');
+  if(!tooltip||tooltip.hasAttribute(compactMotionTooltipAttribute))return;
+  const normalized=(tooltip.textContent||'').replace(/\s+/g,'');
+  if(normalized!=='动画测试')return;
+  const oldWidth=tooltip.getBoundingClientRect().width;
+  const oldLeft=Number.parseFloat(tooltip.style.left);
+  tooltip.style.width='max-content';
+  tooltip.style.minWidth='0';
+  const newWidth=tooltip.getBoundingClientRect().width;
+  tooltip.style.setProperty('width',getComputedStyle(tooltip).width,'important');
+  tooltip.setAttribute(compactMotionTooltipAttribute,'');
+  if(Number.isFinite(oldLeft)&&newWidth<oldWidth)tooltip.style.left=`${oldLeft+(oldWidth-newWidth)/2}px`;
+}
 function applyTranslatedText(node,value,translated){
   if(value.trim()==='Pen'&&translated.trim()==='钢笔'){
     const element=node.parentElement;
@@ -399,19 +435,8 @@ function applyTranslatedText(node,value,translated){
     element?.style?.setProperty('word-break','keep-all');
   }
   node.nodeValue=translated;
-  if(value.trim()==='Create component'&&translated.trim()==='创建组件'){
-    const row=node.parentElement?.parentElement;
-    const tooltip=row?.parentElement;
-    const rowIsShortcutTooltip=[...(row?.classList??[])].some(name=>name.startsWith('tooltip--textWithShortcut--'));
-    const tooltipIsContent=[...(tooltip?.classList??[])].some(name=>name.startsWith('tooltip--content--'));
-    if(rowIsShortcutTooltip&&tooltipIsContent){
-      const oldWidth=tooltip.getBoundingClientRect().width;
-      const oldLeft=Number.parseFloat(tooltip.style.left);
-      tooltip.style.width='max-content';
-      const newWidth=tooltip.getBoundingClientRect().width;
-      if(Number.isFinite(oldLeft)&&newWidth<oldWidth)tooltip.style.left=`${oldLeft+(oldWidth-newWidth)/2}px`;
-    }
-  }
+  compactTranslatedTooltip(node,value);
+  compactMotionBetaTooltip(node);
 }
 function shouldTranslateAttribute(element,name){
   return name!=='data-tooltip'||element?.getAttribute?.('data-tooltip-type')!=='lookup';
@@ -447,7 +472,7 @@ function translateControlledAutoValue(element){
 }
 function translateNode(node){
   if(!node)return;
-  if(node.nodeType===Node.TEXT_NODE){const value=node.nodeValue;const translated=lookup(value,node);if(translated&&translated!==value)applyTranslatedText(node,value,translated);return;}
+  if(node.nodeType===Node.TEXT_NODE){const value=node.nodeValue;const translated=lookup(value,node);if(translated&&translated!==value)applyTranslatedText(node,value,translated);compactMotionBetaTooltip(node);return;}
   if(node.nodeType!==Node.ELEMENT_NODE&&node.nodeType!==Node.DOCUMENT_FRAGMENT_NODE)return;
   if(node.nodeType===Node.ELEMENT_NODE){translateControlledAutoValue(node);for(const name of attrs){if(!shouldTranslateAttribute(node,name))continue;const value=node.getAttribute(name);const translated=value&&lookup(value,node);if(translated&&translated!==value)node.setAttribute(name,translated);}}
   const walker=document.createTreeWalker(node,NodeFilter.SHOW_ELEMENT|NodeFilter.SHOW_TEXT);
@@ -455,6 +480,7 @@ function translateNode(node){
     if(current.nodeType===Node.TEXT_NODE){const value=current.nodeValue;const translated=lookup(value,current);if(translated&&translated!==value)applyTranslatedText(current,value,translated);}
     else{translateControlledAutoValue(current);for(const name of attrs){if(!shouldTranslateAttribute(current,name))continue;const value=current.getAttribute(name);const translated=value&&lookup(value,current);if(translated&&translated!==value)current.setAttribute(name,translated);}}
   }
+  compactMotionBetaTooltip(node);
 }
 function collectMutationRoots(records){
   const roots=new Set();

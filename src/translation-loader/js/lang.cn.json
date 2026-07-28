@@ -2981,6 +2981,7 @@
   "Share…": "分享…",
   "Share": "分享",
   "Shared ": "共享于 ",
+  "Shared with": "共享对象",
   "Shared files": "共享的文件",
   "Shared Projects": "共享的项目",
   "Shared projects": "共享的项目",
@@ -4604,9 +4605,18 @@
   "Search for and insert components without losing your flow.": "无需中断工作流即可搜索并插入组件。",
   "Unlock scale aspect ratio": "解锁缩放宽高比",
   "Timeline zoom level": "时间轴缩放级别",
+  "You directly": "直接与您共享",
   "Variable font axes...": "可变字体轴…",
   "Variable font axes…": "可变字体轴…",
   "No truncation": "不截断文本",
   "Truncation enabled": "已启用文本截断",
-  "Enabled": "已启用"
+  "Enabled": "已启用",
+  "Resized height to 16:9": "高度已调整为 16:9",
+  "Sorry, I can't build a prototype yet.": "抱歉，我还无法构建原型。",
+  "For now, add interactions in your Prototyping tab or send this to Figma Make.": "目前，请在“原型”选项卡中添加交互，或将其发送到 Figma Make。",
+  "Copy debug details": "复制调试详情",
+  "Send this to support when filing a ticket — it helps us find your exact session.": "提交工单时将其发送给支持团队，这有助于我们找到你的确切会话。",
+  "Support ID": "支持 ID",
+  "Worked for 30s": "运行了 30 秒",
+  "Keep it": "保留"
 }

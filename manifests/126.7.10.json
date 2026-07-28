@@ -1,0 +1,14 @@
+{
+  "figmaVersion": "126.7.10",
+  "translationVersion": "126.7.10-cn.1",
+  "dictionaryEntries": 4620,
+  "loaderModule": "fg01",
+  "bootstrap": "require(\"fg01\");",
+  "platforms": {
+    "macos-x64": "tested",
+    "macos-arm64": "preview",
+    "windows-x64": "preview",
+    "windows-arm64": "preview"
+  },
+  "notes": "升级适配 Figma 126.7.10，累计词典扩展至 4620 条；新增共享对象筛选、插件页面加载、画布高度调整、AI 原型限制、调试详情、支持会话、运行耗时与保留结果等界面翻译，并补充动态数量和额度提示。继续保护组件与用户命名、代码与 CSS、字体名称和字重、色彩空间等专业内容。macOS Intel 已在 Figma 126.7.10 实机验证，macOS Apple Silicon 与 Windows x64、ARM64 使用同源构建流程并标记为预览，待对应平台实机复验。"
+}
