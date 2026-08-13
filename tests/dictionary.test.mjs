@@ -22,8 +22,41 @@ test("关键累积翻译不会被后续更新覆盖", () => {
     "Change colors": "更改颜色",
     "Add object": "添加对象",
     "Checking for changes": "正在检查更改",
+    "Applying changes...": "正在应用更改…",
+    "Applying changes…": "正在应用更改…",
+    "Inspecting missing page...": "正在检查缺失页面…",
+    "Inspecting missing page…": "正在检查缺失页面…",
     "Loading comments...": "正在加载评论…",
     "Loading comments…": "正在加载评论…",
+    "Comments hidden": "评论已隐藏",
+    "Comments visible": "评论已显示",
+    "Comment resolved": "评论已解决",
+    "Projects are now folders": "项目现已升级为文件夹",
+    "Figma projects are now versatile, customizable folders. You can color-code them, create subfolders, and drag and drop to store work.": "Figma 项目现已成为灵活、可自定义的文件夹。你可以用颜色标记、创建子文件夹，并通过拖放来存放工作内容。",
+    "All types": "全部类型",
+    "All folders": "全部文件夹",
+    "Change folder color": "更改文件夹颜色",
+    "Add a description for this folder": "为此文件夹添加描述",
+    "Copy link to folder": "复制文件夹链接",
+    "You can only transfer this folder to another organization with nested folders enabled.": "你只能将此文件夹转移到已启用嵌套文件夹的其他组织。",
+    "You can transfer this folder and its content to an external team in a Professional, Organization, or Enterprise plan.": "你可以将此文件夹及其内容转移到使用专业版、组织版或企业版方案的外部团队。",
+    "Once an admin accepts, the transfer cannot be undone.": "管理员接受后，转移将无法撤销。",
+    "Members of your team may still have access if the receiving team chooses to keep individual collaborators.": "如果接收团队选择保留个人协作者，你团队的成员可能仍可访问。",
+    "Once the receiving team shares their Figma team link with you, add it here.": "接收团队与你分享其 Figma 团队链接后，请在此处添加。",
+    "Once the receiving team shares their": "接收团队与你分享其",
+    "Figma team link": "Figma 团队链接",
+    "with you, add it here.": "后，请在此处添加。",
+    "You can transfer a copy of this folder to another team in a Professional, Organization, or Enterprise plan.": "你可以将此文件夹的副本转移到使用专业版、组织版或企业版方案的其他团队。",
+    "Once an admin accepts, a copy of the folder will be transferred.": "管理员接受后，将转移此文件夹的副本。",
+    "Only those on the receiving team or organization will have access to this copy, and any file branches, comments, and version history won’t be transferred.": "只有接收团队或组织中的成员才能访问此副本，文件的分支、评论和版本历史记录不会被转移。",
+    "Only those on the receiving team or organization will have access to this copy, and any file branches, comments, and version history won't be transferred.": "只有接收团队或组织中的成员才能访问此副本，文件的分支、评论和版本历史记录不会被转移。",
+    "Professional, Organization, or Enterprise plan.": "专业版、组织版或企业版方案。",
+    "Enterprise plan.": "企业版方案。",
+    "View and comment only": "仅查看和评论",
+    "$20/mo": "$20/月",
+    "$15/mo": "$15/月",
+    "$5/mo": "$5/月",
+    "Anyone with this link can join with a View seat, where they can view files, comment, and create folders in your team.": "任何获得此链接的人都可以以查看席位加入，从而查看文件、发表评论并在你的团队中创建文件夹。",
     "Resized height to 16:9": "高度已调整为 16:9",
     "Sorry, I can't build a prototype yet.": "抱歉，我还无法构建原型。",
     "For now, add interactions in your Prototyping tab or send this to Figma Make.": "目前，请在“原型”选项卡中添加交互，或将其发送到 Figma Make。",
@@ -32,6 +65,25 @@ test("关键累积翻译不会被后续更新覆盖", () => {
     "Support ID": "支持 ID",
     "Worked for 30s": "运行了 30 秒",
     "Keep it": "保留",
+    "We've sent your request to the file's owner. You can create and edit other files in the meantime.": "我们已将你的请求发送给文件所有者。在此期间，你可以创建和编辑其他文件。",
+    "Alpha (use transparency)": "透明度（使用透明度）",
+    "Vector (use shape outlines)": "矢量（使用形状轮廓）",
+    "Luminance (use brightness)": "亮度（使用亮度）",
+    "Insert instance": "插入实例",
+    "Includes 8 variants": "包含 8 个变体",
+    "Reset properties": "重置属性",
+    "Add interactions (AI)": "使用 AI 添加交互",
+    "Click - to remove mixed content.": "点击 - 以移除混合内容。",
+    "Click - to remove mixed content": "点击 - 移除混合内容",
+    "Copying as PNG...": "正在复制为 PNG…",
+    "Copying as PNG…": "正在复制为 PNG…",
+    "Collections options": "集合选项",
+    "Fit width": "适应宽度",
+    "Fill screen": "填满屏幕",
+    "Resize window to 100%": "将窗口缩放至 100%",
+    "Reset aspect ratio": "重置宽高比",
+    "Update page to latest layout": "将页面更新为最新布局",
+    "Update selection to latest layout": "将所选内容更新为最新布局",
     "Pasting…": "正在粘贴…",
     "Recent chats": "最近对话",
     "Design next user screen": "设计下一个用户界面",
@@ -60,6 +112,21 @@ test("关键累积翻译不会被后续更新覆盖", () => {
     "Create connectors, just for you": "为你创建专属连接器",
     "Create a connector to any MCP server for your own use. Figma doesn’t review custom connectors, so be sure you trust your sources.": "创建一个连接到任意 MCP 服务器的连接器，供你自己使用。Figma 不会审核自定义连接器，因此请确保其来源可信。",
     "Create a connector to any MCP server for your own use. Figma doesn't review custom connectors, so be sure you trust your sources.": "创建一个连接到任意 MCP 服务器的连接器，供你自己使用。Figma 不会审核自定义连接器，因此请确保其来源可信。",
+    "Connect an external team": "连接外部团队",
+    "Connect an external team?": "连接外部团队？",
+    "When you connect an external team, this will become a": "连接外部团队后，该项目将成为",
+    "connected project": "已连接项目",
+    "connected project.": "已连接项目。",
+    "connected folder": "已连接文件夹",
+    "connected folder.": "已连接文件夹。",
+    "Everyone in it will be able to edit": "项目中的所有人都可以编辑",
+    "Everyone in it will be able to edit files and": "项目中的所有人都可以编辑文件并",
+    "files and use libraries.": "文件并使用组件库。",
+    "use libraries.": "使用组件库。",
+    "Everyone in it will be able to edit files and use libraries.": "项目中的所有人都可以编辑文件并使用组件库。",
+    "When you connect an external team, this will become a connected project. Everyone in it will be able to edit files and use libraries.": "连接外部团队后，该项目将成为已连接项目。项目中的所有人都可以编辑文件并使用组件库。",
+    "When you connect an external team, this will become a connected folder. Everyone in it will be able to edit files and use libraries.": "连接外部团队后，该项目将成为已连接文件夹。项目中的所有人都可以编辑文件并使用组件库。",
+    "Page link copied to clipboard": "页面链接已复制到剪贴板",
     "Create connector": "创建连接器",
     "Connect": "连接",
     "Want to see other built-in connectors?": "想查看其他内置连接器？",
@@ -223,6 +290,11 @@ test("关键累积翻译不会被后续更新覆盖", () => {
     "Collapse timeline": "收起时间轴",
     "Open help": "打开帮助",
     "Set up third-party agents for Figma MCP": "为 Figma MCP 配置第三方智能体",
+    "Figma plugin auto install": "Figma 插件自动安装",
+    "We’ll configure these agents for you, so they can use Figma MCP tools and skills. After installation, make a tool call to finish authentication.": "我们会为你配置这些智能体，使其可以使用 Figma MCP 工具和技能。安装后，请调用工具完成身份验证。",
+    "How to set up other agents": "如何设置其他智能体",
+    "Get Figma integration": "获取 Figma 集成",
+    "Add another agent": "添加另一个智能体",
     "Layer options": "图层选项",
     "Copy URL for selected layer": "复制所选图层的 URL",
     "Copy Layout, press shift to copy all code": "复制布局，按住 Shift 可复制全部代码",
@@ -284,7 +356,25 @@ test("关键累积翻译不会被后续更新覆盖", () => {
     "Truncation enabled": "已启用文本截断",
     "Enabled": "已启用",
     "Style": "样式",
-    "Position": "位置"
+    "Position": "位置",
+    "Review layout": "检查布局",
+    "Nothing to update": "没有需要更新的内容",
+    "Children set to fill will resize for padding and inside strokes": "设置为填充的子图层会根据内边距和内部描边调整大小",
+    "Select an option": "选择一个选项",
+    "Keyboard box selection activated": "键盘框选已启用",
+    "Keyboard pick selection activated": "键盘点选已启用",
+    "Recompute text layout in selection": "重新计算所选内容中的文本布局",
+    "Update and publish selected component": "更新并发布所选组件",
+    "Reset variable modes in selection": "重置所选内容中的变量模式",
+    "Regenerate component props for selection": "为所选内容重新生成组件属性",
+    "Clear all component props data from selection": "清除所选内容中的所有组件属性数据",
+    "Prune invalid component prop refs for selection": "清理所选内容中无效的组件属性引用",
+    "Select all text layers": "选择所有文本图层",
+    "Left to right text direction": "从左到右的文本方向",
+    "Right to left text direction": "从右到左的文本方向",
+    "Update to support latest text layout": "更新以支持最新文本布局",
+    "Update to support bidirectional text (RTL)": "更新以支持双向文本（RTL）",
+    "Convert to text on path": "转换为路径文字"
   };
   for (const [source, target] of Object.entries(expected)) assert.equal(dictionary[source], target, source);
 });
@@ -327,10 +417,9 @@ test("iPhone 设备预设颜色使用 Apple 中国大陆官方名称", () => {
     "Rose Gold": "玫瑰金色"
   };
   for (const [source, target] of Object.entries(expected)) assert.equal(dictionary[source], target, source);
-  assert.match(runtime, /"Cosmic Orange":"星宇橙色"/);
   assert.match(runtime, /isIPhoneDeviceColorContext/);
   assert.match(runtime, /iphoneDeviceColorTranslations=\{black:'黑色',white:'白色'\}/);
-  assert.match(runtime, /!iphoneDeviceColor&&!themeOption&&!directTooltip&&isFontWeightContext/);
+  assert.match(runtime, /!iphoneDeviceColor&&!themeOption&&!directTooltip&&!textFormattingMenu&&isFontWeightContext/);
   assert.match(runtime, /isThemeOptionContext/);
   assert.match(runtime, /themeOptionTranslations=\{dark:'黑色',light:'浅色'\}/);
   assert.match(runtime, /isAccountThemeContext/);
@@ -341,6 +430,22 @@ test("iPhone 设备预设颜色使用 Apple 中国大陆官方名称", () => {
   assert.match(runtime, /\^Auto\\s\*\\\(\(\.\+\)\\\)\$/);
   assert.match(runtime, /Rename\\s\+\(\\d\+\)\\s\+layers/);
   assert.match(runtime, /Reset\\s\+\["“\]/);
+  assert.ok(runtime.includes("normalized.match(/^On this page,\\s*([\\d,]+)\\s+layers have been updated to the latest auto layout"));
+  assert.ok(runtime.includes("normalized.match(/^There are\\s+([\\d,]+)\\s+layers that might shift with the new layout"));
+  assert.match(runtime, /You\['’\]re about to move the file/);
+  assert.match(runtime, /restore it later from the \(\?:Trash\|回收站\) section/);
+  assert.match(runtime, /function isTrashDialogContext/);
+  assert.match(runtime, /trashDialogCandidate/);
+  assert.match(runtime, /function translateAttributes/);
+  assert.match(runtime, /function translateTextNode/);
+  assert.match(runtime, /你即将把文件/);
+  assert.match(runtime, /Anyone with edit access on the project/);
+  assert.match(runtime, /项目中任何拥有编辑权限的人都可以稍后从/);
+  assert.match(runtime, /Move file to trash\|将文件移到回收站/);
+  assert.match(runtime, /Trash section/);
+  assert.match(runtime, /normalized\.match\(\/\^Move file\\s\+\(\.\+\)\$/i);
+  assert.match(runtime, /中恢复该文件/);
+  assert.ok(runtime.includes("normalized.match(/^Go to Frame\\s+(.+)"));
 });
 
 test("专业名词与代码内容的保护规则仍存在", () => {
@@ -423,7 +528,7 @@ test("组件属性值保留用户手动命名", () => {
   assert.doesNotMatch(runtime, /data-testid\*="component-properties"/);
   assert.doesNotMatch(runtime, /__reactFiber\$/);
   assert.match(runtime, /isComponentPropertyValueContext/);
-  assert.match(runtime, /if\(isComponentPropertyValueContext\(element\)&&!layoutGuideCountAuto&&!directTooltip\)return undefined/);
+  assert.match(runtime, /const isComponentDetailText=componentDetailActionTranslations\.has\(normalized\.toLocaleLowerCase\('en-US'\)\)\|\|\/\^includes\\s\+\\d\+\\s\+variants\?\$\/i\.test\(normalized\)/);
   assert.doesNotMatch(runtime, /componentPanelSystem|invalidVariantName|This layer has an invalid name/);
   for (const userName of ["Hex", "Hexagon", "Hexagonal"]) assert.equal(dictionary[userName], undefined, userName);
   assert.doesNotMatch(runtime, /"Hexagon":"六边形","Lines"/);
@@ -436,15 +541,56 @@ test("原生标签页菜单使用固定与取消固定", () => {
 });
 
 test("排版与组件设置的重叠提示统一翻译", () => {
+  assert.equal(dictionary.Mixed, "多个值");
+  assert.equal(dictionary["Everyone in it will be able to edit files and"], "项目中的所有人都可以编辑文件并");
+  assert.equal(dictionary["use libraries."], "使用组件库。");
+  assert.equal(dictionary["Insert instance"], "插入实例");
+  assert.equal(dictionary["Includes 8 variants"], "包含 8 个变体");
+  assert.equal(dictionary["Reset properties"], "重置属性");
+  assert.equal(dictionary["Comment resolved"], "评论已解决");
   assert.equal(dictionary["Bulleted list"], "无序列表");
   assert.equal(dictionary["Numbered list"], "有序列表");
   assert.match(runtime, /directTooltipTranslations=\{'Bold':'加粗','Italic':'斜体','Strikethrough':'删除线','Header 1':'标题 1','Link':'链接','Code':'代码','Code block':'代码块','Standard':'标准'\}/);
+  assert.match(runtime, /textFormattingMenuTranslations=\{bold:'加粗',italic:'斜体'\}/);
+  assert.match(runtime, /function localizeTextFormattingMenu/);
+  assert.match(runtime, /hasUnderline&&hasStrikethrough&&hasCreateLink\?translated:undefined/);
+  assert.match(runtime, /!directTooltip&&!textFormattingMenu&&isFontWeightContext/);
+  assert.match(runtime, /\^\(\\d\+\)\\s\+selected\$.*已选择 \$\{match\[1\]\} 个/);
   assert.match(runtime, /function localizeDirectTooltip/);
   assert.match(runtime, /translated\+normalized\.slice\(label\.length\)/);
   assert.match(runtime, /isComponentPropertyValueContext\(element\).*&&!directTooltip/);
   assert.match(runtime, /isCodeSyntaxContext\(element\).*&&!directTooltip/);
-  assert.match(runtime, /!directTooltip&&isFontWeightContext/);
+  assert.match(runtime, /!directTooltip&&!textFormattingMenu&&isFontWeightContext/);
   assert.doesNotMatch(runtime, /typographyPanelSelector|isTypographyPanelListTooltipContext|isVerticalTrimStandardContext/);
+  assert.match(runtime, /normalized\.toLocaleLowerCase\('en-US'\)!=='mixed'\)return undefined/);
+  assert.doesNotMatch(runtime, /function isMixedSelectionContext|function isMixedValueSectionContext/);
+  assert.match(runtime, /function translateReadonlyMixedValue/);
+  assert.match(runtime, /function translateMixedTextNode/);
+  assert.match(runtime, /function isConnectedTeamContext/);
+  assert.match(runtime, /function isFolderTransferContext/);
+  assert.match(runtime, /folderTransferFragments/);
+  assert.match(runtime, /You can transfer a copy of this folder to another team in a/);
+  assert.match(runtime, /\['connected folder','已连接文件夹'\]/);
+  assert.match(runtime, /function translateFolderTransferPlanElement/);
+  assert.match(runtime, /Professional, Organization, or Enterprise plan\(\\\.\)\?/);
+  assert.match(runtime, /element\.textContent=`专业版、组织版或企业版方案\$\{match\[1\]\|\|''\}`/);
+  assert.doesNotMatch(runtime, /\['Professional, Organization, or Enterprise plan\.',/);
+  assert.doesNotMatch(runtime, /\['plan\.',/);
+  assert.match(runtime, /function translateConnectedTeamFragments/);
+  assert.match(runtime, /Includes\\s\+\(\\d\+\)\\s\+variants\?/);
+  assert.match(runtime, /componentDetailActionTranslations=new Set\(\['insert instance','reset properties'\]\)/);
+  assert.match(runtime, /项目中的所有人都可以编辑文件并/);
+  assert.match(runtime, /node\.nodeValue\.trim\(\)!=='Mixed'/);
+  assert.match(runtime, /function isComponentUserNameContext/);
+  assert.match(runtime, /element\.matches\?\.\(componentUserNameSelector\)/);
+  assert.match(runtime, /function isComponentNameInputContext/);
+  assert.match(runtime, /const componentNameValue=isComponentNameInputContext\(element\)/);
+  assert.match(runtime, /element\.value!==['"]Mixed['"]/);
+  assert.match(runtime, /element\.value='多个值'/);
+  assert.match(runtime, /element\.isContentEditable\|\|element\.matches\?\.\('\[contenteditable=\"true\"\]'\)/);
+  assert.match(runtime, /isComponentPropertyValueContext\(element\)/);
+  assert.match(runtime, /element\.setAttribute\('value','多个值'\)/);
+  assert.match(runtime, /value==='Mixed'&&!this\.isContentEditable&&!isComponentUserNameContext\(this\)\?'多个值':value/);
 });
 
 test("翻译加载器包含防重复和动态界面处理", () => {
