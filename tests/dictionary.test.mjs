@@ -30,10 +30,51 @@ test("关键累积翻译不会被后续更新覆盖", () => {
     "Loading comments…": "正在加载评论…",
     "Comments hidden": "评论已隐藏",
     "Comments visible": "评论已显示",
+    "What else changes?": "还有哪些变化？",
+    "MCP tool calls": "MCP 工具调用",
+    "Stay on Professional": "继续使用专业版",
+    "Downgrade to Starter": "降级至入门版",
+    "3 files": "3 个文件",
+    "3,000/mo for Full Seats": "完整席位每月 3,000 点",
+    "500/mo, 150/day": "每月 500 点，每日 150 点",
+    "200/day for Full seats": "完整席位每日 200 次",
+    "6/mo": "每月 6 次",
+    "Cancel your Professional plan?": "取消专业版套餐？",
+    "If you’d like to change to a different pricing plan instead,": "如果您想改用其他定价方案，请",
+    "If you'd like to change to a different pricing plan instead,": "如果您想改用其他定价方案，请",
+    "will become a free Starter team at the end of the current subscription period": "将在当前订阅周期结束后成为免费的入门版团队",
+    "Reactivate plan": "重新激活套餐",
+    "Reactivate your subscription of Professional": "重新激活专业版订阅",
+    "Update payment details": "更新付款信息",
+    "Take a minute to update the payment method and address associated with your payment information. Please note that we'll charge any unpaid invoices once you update your payment method.": "请更新付款信息所关联的付款方式和地址。请注意，更新付款方式后，我们将收取所有未付账单的款项。",
+    "Card number": "卡号",
+    "Expiration date": "有效期",
+    "Security code": "安全码",
+    "Name on payment method": "持卡人姓名",
+    "Billing address": "账单地址",
+    "Apt, unit, suite, etc. (optional)": "公寓、单元、套房等（选填）",
+    "United States": "美国",
+    "City": "城市",
+    "Zip code": "邮政编码",
+    "Your monthly Professional subscription has been canceled.": "您的专业版月度订阅已取消。",
+    "Your team is locked": "您的团队已锁定",
+    "Your team is over Starter plan limits. To unlock, reactivate your Professional plan or move some work.": "您的团队已超出入门版套餐限制。要解锁，请重新激活专业版套餐或移动部分内容。",
+    "Reactivate your Professional plan": "重新激活专业版套餐",
+    "Locked": "已锁定",
+    "See what's included": "查看套餐权益",
+    "See what’s included": "查看套餐权益",
+    "Your plan and usage": "套餐与用量",
+    "Reactivate your Professional plan before": "请在",
+    "to keep unlimited files, more AI credits, and": "之前重新激活专业版套餐，以继续享有无限文件、更多 AI 额度及",
+    "so much more.": "其他更多权益。",
     "Comment resolved": "评论已解决",
     "Projects are now folders": "项目现已升级为文件夹",
     "Figma projects are now versatile, customizable folders. You can color-code them, create subfolders, and drag and drop to store work.": "Figma 项目现已成为灵活、可自定义的文件夹。你可以用颜色标记、创建子文件夹，并通过拖放来存放工作内容。",
     "All types": "全部类型",
+    "All categories": "全部分类",
+    "Edit annotation": "编辑备注",
+    "Filter by": "筛选条件",
+    "Hide annotations": "隐藏备注",
     "All folders": "全部文件夹",
     "Change folder color": "更改文件夹颜色",
     "Add a description for this folder": "为此文件夹添加描述",
@@ -57,6 +98,7 @@ test("关键累积翻译不会被后续更新覆盖", () => {
     "$15/mo": "$15/月",
     "$5/mo": "$5/月",
     "Anyone with this link can join with a View seat, where they can view files, comment, and create folders in your team.": "任何获得此链接的人都可以以查看席位加入，从而查看文件、发表评论并在你的团队中创建文件夹。",
+    "Anyone you or collaborators invited can access this file.": "您或协作者邀请的任何人都可以访问此文件。",
     "Resized height to 16:9": "高度已调整为 16:9",
     "Sorry, I can't build a prototype yet.": "抱歉，我还无法构建原型。",
     "For now, add interactions in your Prototyping tab or send this to Figma Make.": "目前，请在“原型”选项卡中添加交互，或将其发送到 Figma Make。",
@@ -64,6 +106,55 @@ test("关键累积翻译不会被后续更新覆盖", () => {
     "Send this to support when filing a ticket — it helps us find your exact session.": "提交工单时将其发送给支持团队，这有助于我们找到你的确切会话。",
     "Support ID": "支持 ID",
     "Worked for 30s": "运行了 30 秒",
+    "Worked for 40s": "运行了 40 秒",
+    "Can’t upload some file types.": "无法上传某些文件类型。",
+    "Motion was edited": "已在 Figma Motion 中编辑",
+    "Open in Figma Motion": "在 Figma Motion 中打开",
+    "Ask for changes": "请求修改",
+    "Inspecting squares": "正在检查方形",
+    "Planning next steps": "正在规划后续步骤",
+    "Collaborators in this file": "此文件中的协作者",
+    "Invite sent": "邀请已发送",
+    "Add comma separated emails to invite": "输入要邀请的邮箱，多个邮箱请用逗号分隔",
+    "People invited to file": "此文件的受邀人员",
+    "What can people find or learn from this file? Get specific, so the community knows what to expect.": "人们可以从此文件中找到或了解什么？请具体说明，让社区成员清楚可以期待哪些内容。",
+    "Includes": "包含",
+    "Select a category": "选择分类",
+    "You can right-click a frame and select ‘Set as thumbnail’": "您可以右键点击画框，然后选择“设为封面”",
+    "Email or website where users can contact you": "用户可与您联系的邮箱或网站",
+    "Apps": "应用",
+    "Design inspirations": "设计灵感",
+    "Icon Packs": "图标包",
+    "Presentation templates": "演示文稿模板",
+    "Print": "印刷品",
+    "Calendar templates": "日历模板",
+    "Data templates": "数据模板",
+    "Classroom activities": "课堂活动",
+    "Design tutorials": "设计教程",
+    "Lesson plans": "课程计划",
+    "Banners": "横幅",
+    "Cards": "卡片",
+    "Flyers": "传单",
+    "Invitations": "邀请函",
+    "Letterheads": "信笺",
+    "Name tags": "姓名牌",
+    "One pagers": "单页资料",
+    "Posters": "海报",
+    "Web & social ads": "网页与社交广告",
+    "Device mockups": "设备样机",
+    "Fonts & typography": "字体与排版",
+    "Illustrations library": "插画库",
+    "Stock photography": "图库摄影",
+    "Zoom backgrounds": "Zoom 背景",
+    "Align left baseline": "左对齐基线",
+    "Align right baseline": "右对齐基线",
+    "Align center baseline": "居中对齐基线",
+    "Remove baseline alignment": "移除基线对齐",
+    "and 5 others": "等 5 人",
+    "Shared folders": "共享的文件夹",
+    "Shared by": "共享者",
+    "Shared at": "共享时间",
+    "Active in file": "文件中活跃",
     "Keep it": "保留",
     "We've sent your request to the file's owner. You can create and edit other files in the meantime.": "我们已将你的请求发送给文件所有者。在此期间，你可以创建和编辑其他文件。",
     "Alpha (use transparency)": "透明度（使用透明度）",
@@ -114,6 +205,9 @@ test("关键累积翻译不会被后续更新覆盖", () => {
     "Create a connector to any MCP server for your own use. Figma doesn't review custom connectors, so be sure you trust your sources.": "创建一个连接到任意 MCP 服务器的连接器，供你自己使用。Figma 不会审核自定义连接器，因此请确保其来源可信。",
     "Connect an external team": "连接外部团队",
     "Connect an external team?": "连接外部团队？",
+    "Wrap style": "换行样式",
+    "Pretty": "美观",
+    "Balance": "均衡",
     "When you connect an external team, this will become a": "连接外部团队后，该项目将成为",
     "connected project": "已连接项目",
     "connected project.": "已连接项目。",
@@ -126,6 +220,7 @@ test("关键累积翻译不会被后续更新覆盖", () => {
     "Everyone in it will be able to edit files and use libraries.": "项目中的所有人都可以编辑文件并使用组件库。",
     "When you connect an external team, this will become a connected project. Everyone in it will be able to edit files and use libraries.": "连接外部团队后，该项目将成为已连接项目。项目中的所有人都可以编辑文件并使用组件库。",
     "When you connect an external team, this will become a connected folder. Everyone in it will be able to edit files and use libraries.": "连接外部团队后，该项目将成为已连接文件夹。项目中的所有人都可以编辑文件并使用组件库。",
+    "Copied properties": "已复制属性",
     "Page link copied to clipboard": "页面链接已复制到剪贴板",
     "Create connector": "创建连接器",
     "Connect": "连接",
@@ -200,6 +295,8 @@ test("关键累积翻译不会被后续更新覆盖", () => {
     "Rotate 90 degrees": "旋转 90°",
     "Match (optional)": "匹配（可选）",
     "Rename to": "重命名为",
+    "Renamed all layers": "已重命名所有图层",
+    "Renamed component": "已重命名组件",
     "Number ↑": "编号 ↑",
     "Number ↓": "编号 ↓",
     "Use your fonts with Figma agents": "在 Figma 智能体中使用您的字体",
@@ -292,6 +389,8 @@ test("关键累积翻译不会被后续更新覆盖", () => {
     "Set up third-party agents for Figma MCP": "为 Figma MCP 配置第三方智能体",
     "Figma plugin auto install": "Figma 插件自动安装",
     "We’ll configure these agents for you, so they can use Figma MCP tools and skills. After installation, make a tool call to finish authentication.": "我们会为你配置这些智能体，使其可以使用 Figma MCP 工具和技能。安装后，请调用工具完成身份验证。",
+    "New: Skills for the Figma agent": "新功能：Figma 智能体技能",
+    "Use skills with the Figma agent to work even smarter. Browse Community-made ones, or share your own.": "通过 Figma 智能体使用技能，让工作更高效。浏览社区创作的技能，或分享你自己的技能。",
     "How to set up other agents": "如何设置其他智能体",
     "Get Figma integration": "获取 Figma 集成",
     "Add another agent": "添加另一个智能体",
@@ -377,6 +476,8 @@ test("关键累积翻译不会被后续更新覆盖", () => {
     "Convert to text on path": "转换为路径文字"
   };
   for (const [source, target] of Object.entries(expected)) assert.equal(dictionary[source], target, source);
+  for (const brand of ["Facebook", "Instagram", "LinkedIn", "TikTok", "X/Twitter", "YouTube"])
+    assert.equal(dictionary[brand], undefined, `${brand} 品牌名应保持原文`);
 });
 
 test("iPhone 设备预设颜色使用 Apple 中国大陆官方名称", () => {
@@ -429,6 +530,8 @@ test("iPhone 设备预设颜色使用 Apple 中国大陆官方名称", () => {
   assert.match(runtime, /\^Step\\s\+\(\\d\+\)\\s\+of/);
   assert.match(runtime, /\^Auto\\s\*\\\(\(\.\+\)\\\)\$/);
   assert.match(runtime, /Rename\\s\+\(\\d\+\)\\s\+layers/);
+  assert.match(runtime, /Rename\\s\+\(\\d\+\)\\s\+pages/);
+  assert.match(runtime, /Delete\\s\+\(\\d\+\)\\s\+pages/);
   assert.match(runtime, /Reset\\s\+\["“\]/);
   assert.ok(runtime.includes("normalized.match(/^On this page,\\s*([\\d,]+)\\s+layers have been updated to the latest auto layout"));
   assert.ok(runtime.includes("normalized.match(/^There are\\s+([\\d,]+)\\s+layers that might shift with the new layout"));
@@ -507,12 +610,27 @@ test("专业名词与代码内容的保护规则仍存在", () => {
   assert.match(runtime, /\^Loading\\s\+\(\\d\+\)\\s\+pages\\s\+for\\s\+plugin/);
   assert.match(runtime, /\^Resized height to\\s\+\(\.\+\)\$/);
   assert.match(runtime, /\^Worked\\s\+for\\s\+\(\\d\+\)s\$/);
+  assert.match(runtime, /Invite sent/);
+  assert.match(runtime, /and\\s\+\(\\d\+\)\\s\+others/);
+  assert.match(runtime, /\[’'\]s Folder/);
   assert.match(runtime, /This prompt uses\\s\+\(\\d\+\)\\s\+AI credits while in beta/);
   assert.match(runtime, /\^Sweep\\s\+/);
   assert.match(runtime, /\^Connection error:/);
   assert.match(runtime, /\^Error code:/);
   assert.match(runtime, /Error navigating to/);
   assert.match(runtime, /ERR_\[A-Z0-9_\]/);
+  assert.match(runtime, /Your team is about to lose edit access to/);
+  assert.match(runtime, /Once your Professional plan ends on/);
+  assert.match(runtime, /When you cancel your Professional plan/);
+  assert.match(runtime, /will become a free Starter team at the end of the current subscription period/);
+  assert.match(runtime, /days\? until plan downgrade/);
+  assert.match(runtime, /Reactivate your Professional plan before/);
+  assert.ok(runtime.includes("normalized.match(/^Move\\s+([\\d,]+)\\s+Figma Design or Sites files?$/i)"));
+  assert.ok(runtime.includes("normalized.match(/^Consolidate to\\s+([\\d,]+)\\s+folders?$/i)"));
+  assert.match(runtime, /function isPaymentDetailsContext/);
+  assert.match(runtime, /isPaymentDetailsContext\(element\)\)translated='州'/);
+  assert.match(runtime, /localizeShortDate\(match\[1\]\)/);
+  assert.match(runtime, /\^\(\[\\d,\]\+\)\\s\+files\?/);
 });
 
 test("组件属性值保留用户手动命名", () => {

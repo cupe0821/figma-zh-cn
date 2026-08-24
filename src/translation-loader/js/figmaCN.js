@@ -120,6 +120,13 @@ function localizeClockTime(value){
   match=normalized.match(/^(\d{1,2}:\d{2})\s*(AM|PM)$/i);
   return match?`${match[2].toUpperCase()==='AM'?'上午':'下午'} ${match[1]}`:undefined;
 }
+function isPaymentDetailsContext(element){
+  for(let current=element,depth=0;current&&depth<9;current=current.parentElement,depth++){
+    const text=(current.textContent||'').replace(/\s+/g,' ').trim();
+    if(text.length<=1800&&/(?:Update payment details|更新付款信息)/i.test(text)&&/(?:Card number|卡号|Billing address|账单地址)/i.test(text))return true;
+  }
+  return false;
+}
 function localizeRelativeTime(value){
   const normalized=value.trim().replace(/\s+/g,' ');
   let match=normalized.match(/^(a|an|\d+)\s+(second|minute|hour|day|week|month|year)s?\s+ago$/i);
@@ -384,6 +391,7 @@ function lookup(value,node){
   if(iphoneDeviceColor)translated=iphoneDeviceColorTranslations[normalized.toLocaleLowerCase('en-US')];
   if(themeOption)translated=themeOptionTranslations[normalized.toLocaleLowerCase('en-US')];
   if(layoutGuideCountAuto)translated='自动';
+  if(normalized.toLocaleLowerCase('en-US')==='state'&&isPaymentDetailsContext(element))translated='州';
   if(translated===trimmed||translated===normalized)translated=undefined;
   if(element?.closest?.(shaderPanelSelector)&&shaderOnlyMap[normalized])translated=shaderOnlyMap[normalized];
   if(!translated){
@@ -399,6 +407,18 @@ function lookup(value,node){
     else if(match=normalized.match(/^Added by\s+(.+)$/i))translated=`添加者：${match[1]}`;
     else if(match=normalized.match(/^([\d.,]+[kKmM]?) users?$/))translated=`${match[1]} 位用户`;
     else if(match=normalized.match(/^(\d+)\s+selected$/i))translated=`已选择 ${match[1]} 个`;
+    else if(match=normalized.match(/^([\d,]+)\s+files?$/i))translated=`${match[1]} 个文件`;
+    else if(match=normalized.match(/^Move\s+([\d,]+)\s+Figma Design or Sites files?$/i))translated=`移动 ${match[1]} 个 Figma Design 或 Sites 文件`;
+    else if(match=normalized.match(/^Consolidate to\s+([\d,]+)\s+folders?$/i))translated=`合并为 ${match[1]} 个文件夹`;
+    else if(match=normalized.match(/^Your team is about to lose edit access to\s+([\d,]+)\s+files?$/i))translated=`您的团队即将失去对 ${match[1]} 个文件的编辑权限`;
+    else if(match=normalized.match(/^(\d+)\s+days? until plan downgrade$/i))translated=`距离套餐降级还有 ${match[1]} 天`;
+    else if(match=normalized.match(/^Once your Professional plan ends on\s+(.+?),\s+your team will no longer be able to edit or create new files until the plan is within Starter limits\.$/i))translated=`您的专业版套餐将于 ${localizeShortDate(match[1])} 到期。在套餐内容符合入门版限制之前，您的团队将无法编辑或创建新文件。`;
+    else if(match=normalized.match(/^When you cancel your Professional plan,\s+your team will move to a free Starter plan on\s+(.+?)\.\s+You['’]ll be invoiced for any changes or purchases made before that date\.$/i))translated=`取消专业版套餐后，您的团队将于 ${localizeShortDate(match[1])} 转为免费的入门版套餐。在此日期之前产生的任何变更或购买费用仍将向您开具账单。`;
+    else if(match=normalized.match(/^Reactivate your Professional plan before\s+(.+?)\s+to keep unlimited files, more AI credits, and so much more\.$/i))translated=`请在 ${localizeShortDate(match[1])} 前重新激活专业版套餐，以继续享有无限文件、更多 AI 额度及其他权益。`;
+    else if(match=normalized.match(/^(.+?)\s+will become a free Starter team at the end of the current subscription period$/i))translated=`${match[1]} 将在当前订阅周期结束后成为免费的入门版团队`;
+    else if(match=normalized.match(/^(.+?)\s+\(Invite sent\)$/i))translated=`${match[1]}（邀请已发送）`;
+    else if(match=normalized.match(/^(.+?)[,，]?\s+and\s+(\d+)\s+others$/i))translated=`${match[1]} 等 ${match[2]} 人`;
+    else if(match=normalized.match(/^(.+?)[’']s Folder$/i))translated=`${match[1]} 的文件夹`;
     else if(match=normalized.match(/^Account dropdown for (.+)$/))translated=`${match[1]} 的账户菜单`;
     else if(match=normalized.match(/^Move file\s+(.+)$/i))translated=`移动文件 ${match[1]}`;
     else if(match=normalized.match(/^Plan: (.+)$/))translated=`方案：${match[1]}`;
@@ -417,6 +437,8 @@ function lookup(value,node){
     else if(match=normalized.match(/^You can always restore it later from the (?:Trash|回收站) section\.$/i))translated='你可以随时从回收站中恢复该文件。';
     else if(match=normalized.match(/^(\d+)\s+layers?$/i))translated=`${match[1]} 个图层`;
     else if(match=normalized.match(/^Rename\s+(\d+)\s+layers?$/i))translated=`重命名 ${match[1]} 个图层`;
+    else if(match=normalized.match(/^Rename\s+(\d+)\s+pages?$/i))translated=`重命名 ${match[1]} 个页面`;
+    else if(match=normalized.match(/^Delete\s+(\d+)\s+pages?$/i))translated=`删除 ${match[1]} 个页面`;
     else if(match=normalized.match(/^Reset\s+["“](.+)["”]$/i))translated=`重置“${match[1]}”`;
     else if(match=normalized.match(/^(\d+)\s+of\s+(\d+)$/i))translated=`${match[1]} / ${match[2]}`;
     else if(match=normalized.match(/^Step\s+(\d+)\s+of\s+(\d+)$/i))translated=`第 ${match[1]} 步，共 ${match[2]} 步`;

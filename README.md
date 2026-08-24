@@ -1,6 +1,6 @@
 # Figma 简体中文
 
-这是一个面向 Figma 桌面版的非官方简体中文翻译与本地维护项目。当前基线为 **Figma 126.7.10 / 中文包 126.7.10-cn.2**，包含 4708 条累计词典、着色器与 AI 界面动态翻译、原生菜单翻译和轻量动态界面运行时。
+这是一个面向 Figma 桌面版的非官方简体中文翻译与本地维护项目。当前基线为 **Figma 126.8.16 / 中文包 126.8.16-cn.1**，包含 4808 条累计词典、着色器与 AI 界面动态翻译、原生菜单翻译和轻量动态界面运行时。
 
 > 本仓库不包含 Figma 安装包或应用二进制。请始终从 [Figma 官方渠道](https://www.figma.com/downloads/) 下载桌面应用。本项目只在你的电脑上为官方安装版本加入独立中文加载器。
 
@@ -8,8 +8,8 @@
 
 | 平台 | 发布包 | 当前状态 |
 | --- | --- | --- |
-| macOS Intel | `macos-x64` | 已在 126.7.10 实机验证 |
-| macOS Apple Silicon | `macos-arm64` | 同源安装流程，待 126.7.10 实机复验 |
+| macOS Intel | `macos-x64` | 已在 126.8.16 实机验证 |
+| macOS Apple Silicon | `macos-arm64` | 同源安装流程，待 126.8.16 实机复验 |
 | Windows x64 | `windows-x64` | 同源构建，待对应设备验收 |
 | Windows ARM64 | `windows-arm64` | 同源构建，待对应设备验收 |
 
@@ -109,7 +109,7 @@ npm run uninstall:local
 1. 更新 `src/translation-loader` 和 `manifests/<figma-version>.json`。
 2. 更新 `package.json` 版本和 `manifests/source-lock.json`。
 3. 本地及 GitHub Actions 校验通过。
-4. 创建标签，例如 `v126.7.10-cn.1`。
+4. 创建标签，例如 `v126.8.16-cn.1`。
 5. `release.yml` 在对应平台 runner 上打包本地维护工具、发布 SHA-256，并在 Release 页面生成从上一版本到当前版本的更新说明。
 
 ## 许可与免责声明
