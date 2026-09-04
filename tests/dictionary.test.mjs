@@ -21,9 +21,69 @@ test("关键累积翻译不会被后续更新覆盖", () => {
     "First, select one image": "请先选择一张图像",
     "Change colors": "更改颜色",
     "Add object": "添加对象",
+    "Add starting point": "添加起始点",
+    "Edit objects": "编辑对象",
+    "English": "英语",
+    "日本語": "日语",
+    "Français": "法语",
+    "Deutsch": "德语",
+    "Español (España)": "西班牙语（西班牙）",
+    "Español (Latinoamérica)": "西班牙语（拉丁美洲）",
+    "한국어": "韩语",
+    "Português (Brasil)": "葡萄牙语（巴西）",
     "Checking for changes": "正在检查更改",
     "Applying changes...": "正在应用更改…",
     "Applying changes…": "正在应用更改…",
+    "Replacing...": "正在替换…",
+    "Replacing…": "正在替换…",
+    "Downloading images...": "正在下载图片…",
+    "Downloading images…": "正在下载图片…",
+    "Save partial file": "保存部分文件",
+    "You’re out of credits for this beta feature in your free Starter plan until they reset on Sep 1, 2026. Upgrade your plan for more.": "您的免费入门版计划已用尽此 Beta 功能的额度，额度将在 2026 年 9 月 1 日重置。升级计划以获得更多额度。",
+    "You're out of credits for this beta feature in your free Starter plan until they reset on Sep 1, 2026. Upgrade your plan for more.": "您的免费入门版计划已用尽此 Beta 功能的额度，额度将在 2026 年 9 月 1 日重置。升级计划以获得更多额度。",
+    "By default, display empty slot": "默认显示空插槽",
+    "By default, fill items on slot's counter axis": "默认沿插槽的交叉轴填充项目",
+    "Only preferred instances can be added. Click the slot to view options.": "只能添加首选实例。点击插槽查看选项。",
+    "Your Starter plan": "您的入门版计划",
+    "Use AI credits in Figma Make to build apps, create sites, or bring other ideas to life.": "在 Figma Make 中使用 AI 额度来构建应用、创建网站或实现更多创意。",
+    "Monthly credits used": "每月额度使用量",
+    "daily credits used": "每日额度使用量",
+    "files total across Design and Sites": "Design 和 Sites 中的文件总数",
+    "Which plan and seats would you like?": "您想选择哪种方案和席位？",
+    "Best for anyone who wants to sample Figma": "适合想要体验 Figma 的任何人",
+    "Just like Professional, but limited to collaboration with verified Education users": "与专业版类似，但仅限与经过认证的教育版用户协作",
+    "Monthly": "每月",
+    "Annual (Save 20%)": "每年（节省 20%）",
+    "3 files to try out": "可试用 3 个文件",
+    "Basic design, prototyping, and collaboration": "基础设计、原型制作和协作",
+    "3000 AI credits/month": "每月 3000 点 AI 额度",
+    "Custom templates—just for your team": "专为您的团队打造的自定义模板",
+    "Upgrade to the Professional plan, and build templates for your team’s rituals and workflows—without creating a new file each time.": "升级到专业版方案，为团队的惯例和工作流程创建模板，无需每次都新建文件。",
+    "Upload fonts for your personal use with a paid plan.": "使用付费方案上传字体供个人使用。",
+    "Make activity": "Make 活动",
+    "Notify me when my Make completes": "Make 完成时通知我",
+    "Redesigned aggregation card": "已重新设计聚合卡片",
+    "No matching layers to select on page": "页面上没有匹配的图层可供选择",
+    "Find shared folders": "查找共享的文件夹",
+    "External folders--shared by someone outside your team--are now organized by plan, right here.": "外部文件夹（由团队外部人员共享）现在会按方案整理，并显示在这里。",
+    "Play Motion animations": "播放 Motion 动画",
+    "(Internal-only): Components inside of animations is currently unsupported.": "（仅限内部）：目前不支持动画中的组件。",
+    "Create 3 animation variants": "创建 3 个动画变体",
+    "Add a bounce": "添加弹跳效果",
+    "Learn keyframes": "了解关键帧",
+    "Added voice animation": "已添加语音动画",
+    "Play shaders": "播放着色器",
+    "Stop shaders": "停止着色器",
+    "Moving gradient": "流动渐变",
+    "Morph speed": "变形速度",
+    "Material": "材质",
+    "Color balance": "色彩平衡",
+    "Color method": "着色方式",
+    "Satin": "缎面",
+    "Glossy": "亮面",
+    "Iridescent": "虹彩",
+    "View code": "查看代码",
+    "Facing": "朝向",
     "Inspecting missing page...": "正在检查缺失页面…",
     "Inspecting missing page…": "正在检查缺失页面…",
     "Loading comments...": "正在加载评论…",
@@ -562,6 +622,10 @@ test("专业名词与代码内容的保护规则仍存在", () => {
   assert.match(runtime, /fontWeightNames=new Set\(\[[^\]]*'standard'/);
   assert.match(runtime, /isBlendModeNormalContext/);
   assert.match(runtime, /isShaderQualityPopup/);
+  assert.match(runtime, /"Play shaders":"播放着色器"/);
+  assert.match(runtime, /"Stop shaders":"停止着色器"/);
+  assert.match(runtime, /"Moving gradient":"流动渐变"/);
+  assert.match(runtime, /"Color method":"着色方式"/);
   assert.match(runtime, /\(\?:auto\|自动\)/);
   const autoModePattern = /(?:auto|自动)\s*[\(（][^)）]+[\)）]/i;
   for (const label of ["Auto (Dark)", "自动（Dark）", "自动 (Light)"]) assert.match(label, autoModePattern);
@@ -592,6 +656,11 @@ test("专业名词与代码内容的保护规则仍存在", () => {
   assert.ok(runtime.includes("normalized.match(/^by\\s+([^,.!?]{1,80})$/i)"));
   assert.doesNotMatch(runtime, /\^by\\s\+\(\.\+\)\$/);
   assert.match(runtime, /function shouldTranslateAttribute/);
+  assert.match(runtime, /function localizeLanguageOption/);
+  assert.match(runtime, /languageOptionTranslations\.has\(normalized\.toLocaleLowerCase/);
+  assert.match(runtime, /if\(languageOption\)return leading\+languageOption\+trailing/);
+  assert.match(runtime, /function isEditableTextContext/);
+  assert.match(runtime, /if\(isEditableTextContext\(element\)\)return undefined/);
   assert.match(runtime, /name!=='data-tooltip'\|\|element\?\.getAttribute\?\.\('data-tooltip-type'\)!=='lookup'/);
   assert.doesNotMatch(runtime, /value\.trim\(\)==='Style'&&translated\.trim\(\)==='样式'/);
   assert.match(runtime, /compactTooltipSourceLabels=new Set\(\['Create component','Visual search'\]\)/);
@@ -620,6 +689,11 @@ test("专业名词与代码内容的保护规则仍存在", () => {
   assert.match(runtime, /Error navigating to/);
   assert.match(runtime, /ERR_\[A-Z0-9_\]/);
   assert.match(runtime, /Your team is about to lose edit access to/);
+  assert.match(runtime, /files\?\\s\+used/);
+  assert.match(runtime, /daily credits\?\\s\+used/);
+  assert.match(runtime, /files\?\\s\+total\\s\+across\\s\+Design\\s\+and\\s\+Sites/);
+  assert.match(runtime, /files\?\\s\+to\\s\+try\\s\+out/);
+  assert.match(runtime, /AI\\s\+credits\\\/month/);
   assert.match(runtime, /Once your Professional plan ends on/);
   assert.match(runtime, /When you cancel your Professional plan/);
   assert.match(runtime, /will become a free Starter team at the end of the current subscription period/);

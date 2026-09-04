@@ -36,7 +36,7 @@ Object.assign(map,{
   "Static":"静态","Animated":"动画","Format":"格式","Frame rate":"帧速率","Export frame":"导出帧","Export animation":"导出动画","File size":"文件大小","Easing":"缓动","Ease in":"缓入","Ease out":"缓出","Ease in and out":"缓入缓出"
 });
 Object.assign(map,{
-  "Shader":"着色器","Input mode":"输入模式","Luma":"亮度","Inverse luma":"反向亮度","Inverse alpha":"反向透明度","Edge softness":"边缘柔和度","Source mix":"源混合",
+  "Shader":"着色器","Play shaders":"播放着色器","Stop shaders":"停止着色器","Moving gradient":"流动渐变","Morph speed":"变形速度","Material":"材质","Color balance":"色彩平衡","Color method":"着色方式","Satin":"缎面","Glossy":"亮面","Iridescent":"虹彩","View code":"查看代码","Facing":"朝向","Input mode":"输入模式","Luma":"亮度","Inverse luma":"反向亮度","Inverse alpha":"反向透明度","Edge softness":"边缘柔和度","Source mix":"源混合",
   "Grayscale":"灰度","High Contrast":"高对比度","Smoothing":"平滑度","Vignette":"暗角","Vignette Softness":"暗角柔和度","Spotlight":"聚光灯",
   "Sine wave":"正弦波","Twist":"扭转","Bulge":"膨胀","Pinch":"收缩","Ripple":"涟漪","Flag":"旗帜","Squeeze":"挤压","Swirl":"漩涡","Random":"随机度",
   "Full seat":"完整席位","Dev seat":"开发席位","Collab seat":"协作席位","Credits":"额度","AI credits":"AI 额度","Monthly credits":"每月额度","Credits reset":"额度重置",
@@ -46,6 +46,11 @@ delete map.CMYK;
 delete map['BW light'];
 delete map['BW dark'];
 const ciMap=new Map(Object.entries(map).map(([key,value])=>[key.toLocaleLowerCase('en-US'),value]));
+const languageOptionTranslations=new Map([
+  ['english','英语'],['日本語','日语'],['français','法语'],['deutsch','德语'],
+  ['español (españa)','西班牙语（西班牙）'],['español (latinoamérica)','西班牙语（拉丁美洲）'],
+  ['한국어','韩语'],['português (brasil)','葡萄牙语（巴西）']
+]);
 const shaderOnlyMap={"X":"横向","Y":"纵向","R":"半径","A":"角度","Light":"光照","Hex":"六边形","Hexagon":"六边形","Hexagonal":"六边形"};
 const generatedLayerMap={frame:'画框',rectangle:'矩形',ellipse:'椭圆',polygon:'多边形',star:'星形',line:'直线',vector:'矢量',group:'组',section:'分区',component:'组件',instance:'实例',text:'文本'};
 const fontWeightNames=new Set(['thin','hairline','extra light','ultra light','light','book','regular','roman','normal','medium','standard','semi bold','semibold','demi bold','demibold','bold','extra bold','extrabold','ultra bold','heavy','black','extra black','italic','oblique','bold italic']);
@@ -107,6 +112,12 @@ function isComponentNameInputContext(element){
   const parent=element.parentElement;
   if(!parent?.matches?.(componentNameInputSelector))return false;
   return parent.matches?.('input,textarea,[contenteditable="true"],[role="textbox"]')||parent.isContentEditable===true;
+}
+function isEditableTextContext(element){
+  for(let current=element,depth=0;current&&depth<12;current=current.parentElement,depth++){
+    if(current.isContentEditable===true||current.matches?.('input,textarea,[contenteditable="true"],[role="textbox"]'))return true;
+  }
+  return false;
 }
 const shortMonths={jan:1,january:1,feb:2,february:2,mar:3,march:3,apr:4,april:4,may:5,jun:6,june:6,jul:7,july:7,aug:8,august:8,sep:9,september:9,oct:10,october:10,nov:11,november:11,dec:12,december:12};
 function localizeShortDate(value){
@@ -351,11 +362,22 @@ function isTrashDialogContext(element){
   }
   return false;
 }
+function localizeLanguageOption(element,normalized){
+  const translated=languageOptionTranslations.get(normalized.toLocaleLowerCase('en-US'));
+  if(!translated||!element)return undefined;
+  const dialog=element.closest?.('[role="dialog"]');
+  if(!dialog)return undefined;
+  const text=(dialog.textContent||'').replace(/\s+/g,' ').trim();
+  return /(?:Change languages?|修改语言)/i.test(text)?translated:undefined;
+}
 function lookup(value,node){
   if(typeof value!=='string')return undefined;
   const leading=value.match(/^\s*/)?.[0]??'',trailing=value.match(/\s*$/)?.[0]??'',trimmed=value.trim(),normalized=trimmed.replace(/[\u200B-\u200F\u2060\uFEFF]/g,'').replace(/\s+/g,' ');
-  if(!/[A-Za-z0-9]/.test(normalized))return undefined;
   const element=node?.nodeType===Node.ELEMENT_NODE?node:node?.parentElement;
+  const languageOption=localizeLanguageOption(element,normalized);
+  if(languageOption)return leading+languageOption+trailing;
+  if(languageOptionTranslations.has(normalized.toLocaleLowerCase('en-US')))return undefined;
+  if(!/[A-Za-z0-9]/.test(normalized))return undefined;
   const blendModeNormal=isBlendModeNormalContext(element,normalized);
   const iphoneDeviceColor=isIPhoneDeviceColorContext(element,normalized);
   const themeOption=isThemeOptionContext(element,normalized)||isAccountThemeContext(element,normalized);
@@ -368,6 +390,7 @@ function lookup(value,node){
   const componentNameValue=isComponentNameInputContext(element);
   const ambiguousThemeName=normalized.toLocaleLowerCase('en-US')==='dark'||normalized.toLocaleLowerCase('en-US')==='light';
   const relativeTime=/^\d+\s+(?:seconds?|minutes?|hours?|days?|weeks?|months?|years?)\s+ago$/i.test(normalized)||/^\d+\s*[smhdw]\s+ago$/i.test(normalized);
+  if(isEditableTextContext(element))return undefined;
   if(componentNameValue)return undefined;
   const isComponentDetailText=componentDetailActionTranslations.has(normalized.toLocaleLowerCase('en-US'))||/^includes\s+\d+\s+variants?$/i.test(normalized);
   if(isComponentPropertyValueContext(element)&&!layoutGuideCountAuto&&!directTooltip&&!isComponentDetailText&&normalized.toLocaleLowerCase('en-US')!=='mixed')return undefined;
@@ -408,6 +431,11 @@ function lookup(value,node){
     else if(match=normalized.match(/^([\d.,]+[kKmM]?) users?$/))translated=`${match[1]} 位用户`;
     else if(match=normalized.match(/^(\d+)\s+selected$/i))translated=`已选择 ${match[1]} 个`;
     else if(match=normalized.match(/^([\d,]+)\s+files?$/i))translated=`${match[1]} 个文件`;
+    else if(match=normalized.match(/^([\d,.]+)\s*\/\s*([\d,.]+)\s+files?\s+used$/i))translated=`已使用 ${match[1]}/${match[2]} 个文件`;
+    else if(match=normalized.match(/^([\d,.]+)\s*\/\s*([\d,.]+)\s+daily credits?\s+used$/i))translated=`每日额度已使用 ${match[1]}/${match[2]}`;
+    else if(match=normalized.match(/^([\d,.]+)\s+files?\s+total\s+across\s+Design\s+and\s+Sites$/i))translated=`Design 和 Sites 中共有 ${match[1]} 个文件`;
+    else if(match=normalized.match(/^([\d,.]+)\s+files?\s+to\s+try\s+out$/i))translated=`可试用 ${match[1]} 个文件`;
+    else if(match=normalized.match(/^([\d,.]+)\s+AI\s+credits\/month$/i))translated=`每月 ${match[1]} 点 AI 额度`;
     else if(match=normalized.match(/^Move\s+([\d,]+)\s+Figma Design or Sites files?$/i))translated=`移动 ${match[1]} 个 Figma Design 或 Sites 文件`;
     else if(match=normalized.match(/^Consolidate to\s+([\d,]+)\s+folders?$/i))translated=`合并为 ${match[1]} 个文件夹`;
     else if(match=normalized.match(/^Your team is about to lose edit access to\s+([\d,]+)\s+files?$/i))translated=`您的团队即将失去对 ${match[1]} 个文件的编辑权限`;

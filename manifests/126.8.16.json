@@ -1,7 +1,7 @@
 {
   "figmaVersion": "126.8.16",
   "translationVersion": "126.8.16-cn.1",
-  "dictionaryEntries": 4808,
+  "dictionaryEntries": 4868,
   "loaderModule": "fg01",
   "bootstrap": "require(\"fg01\");",
   "platforms": {
