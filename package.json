@@ -1,6 +1,6 @@
 {
   "name": "figma-zh-cn",
-  "version": "126.8.16-cn.1",
+  "version": "126.8.18-cn.1",
   "private": true,
   "description": "Figma 桌面版简体中文翻译与本地维护工具",
   "type": "module",

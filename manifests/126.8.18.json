@@ -1,0 +1,14 @@
+{
+  "figmaVersion": "126.8.18",
+  "translationVersion": "126.8.18-cn.1",
+  "dictionaryEntries": 4868,
+  "loaderModule": "fg01",
+  "bootstrap": "require(\"fg01\");",
+  "platforms": {
+    "macos-x64": "tested",
+    "macos-arm64": "preview",
+    "windows-x64": "preview",
+    "windows-arm64": "preview"
+  },
+  "notes": "累计词典扩展至 4868 条；补充 Figma Motion 动画、着色器播放与材质参数、起始点与对象编辑、共享文件夹、套餐与额度、下载进度，以及语言选择等界面翻译。新增“修改语言”对话框的限定翻译，避免语言名称影响用户内容，并继续保护组件与用户命名、代码与 CSS、字体名称和字重、色彩空间等专业内容。macOS Intel 已在 Figma 126.8.18 实机验证，macOS Apple Silicon 与 Windows x64、ARM64 使用同源构建流程并标记为预览，待对应平台实机复验。"
+}

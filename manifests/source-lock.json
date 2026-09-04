@@ -1,5 +1,5 @@
 {
-  "version": "126.8.16-cn.1",
+  "version": "126.8.18-cn.1",
   "files": {
     "src/translation-loader/index.js": "c7d195960ff0693b58113dbdb224b8effae8f9fabb53e5baee6e28c64b15d447",
     "src/translation-loader/js/figmaCN.js": "bc34e60d166c39df7f03ec0d64661fa19616d25f1fdf87c3e8f41a053bb9741c",
