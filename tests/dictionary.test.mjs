@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
+import vm from "node:vm";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -10,6 +11,183 @@ const menuDictionary = JSON.parse(fs.readFileSync(path.join(root, "src/translati
 const runtime = fs.readFileSync(path.join(root, "src/translation-loader/js/figmaCN.js"), "utf8");
 const injector = fs.readFileSync(path.join(root, "src/translation-loader/lib/injectJsToWebContents.js"), "utf8");
 const loaderEntry = fs.readFileSync(path.join(root, "src/translation-loader/index.js"), "utf8");
+
+test("扁平语言词典没有被 JSON.parse 静默覆盖的重复键", () => {
+  for (const name of ["lang.cn.json", "lang.cn.menu.json"]) {
+    const source = fs.readFileSync(path.join(root, "src/translation-loader/js", name), "utf8");
+    const keys = [...source.matchAll(/^\s*("(?:[^"\\]|\\.)*")\s*:/gm)].map(match => JSON.parse(match[1]));
+    assert.equal(keys.length, Object.keys(JSON.parse(source)).length, name + " contains duplicate keys or unsupported layout");
+    assert.equal(new Set(keys).size, keys.length, name + " contains duplicate keys");
+  }
+});
+
+test("官方资源上下文中的导航、动画和列表术语保持准确", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;\nfunction start(){"), context);
+  const cases = {"Out":"退场","Current item":"当前项","Media item":"媒体项","Text item":"文本项","Escape":"Esc 键","Next frame":"下一个画框","Work":"工作"};
+  for (const [source, target] of Object.entries(cases)) {
+    assert.equal(context.lookupForTest(source), target, source);
+  }
+});
+
+test("新增官方界面样式、形状和 FigJam 模板词条保持准确", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;\nfunction start(){"), context);
+  const cases = {
+    "Double": "双线", "Groove": "凹槽", "Inset": "内凹", "Outset": "外凸", "Ridge": "凸脊",
+    "Column": "列", "Row": "行", "Results for": "搜索结果：", "Summing junction": "求和节点",
+    "Justify": "两端对齐", "Span": "跨度", "whitespace": "空白字符", "Extended": "扩展", "Overrides": "覆盖项",
+    "Symbol links": "符号链接", "Point": "点", "Payload": "有效载荷", "Swap": "交换", "Phrase": "短语", "Map": "映射", "Child": "子级", "Stepper": "步骤指示器", "Get": "获取", "Go to": "转到", "to edit": "进行编辑",
+    "Everything else is history.": "其余一切都已成为历史。",
+    "for commands": "用于输入命令", "sending it again": "再次发送", "Custom Other Role ": "自定义其他角色 ", "delete my account": "删除我的账户", "(Override)": "（覆盖）", "diagrams": "图表", "gantt": "甘特图", "Ideas": "想法", "journey": "旅程", "org": "组织", "schedule": "日程", "sync": "同步", "user flow": "用户流程", "Make ⌘↵": "生成 ⌘↵",
+    "Viewer-restricted": "仅限查看者", "Select a node to roundtrip": "选择要往返转换的节点", "Abandon and reattach multiplayer": "放弃并重新连接多人协作", "Lint first draft kit": "检查初稿套件", "Repair backing component set": "修复底层组件集", "Trackable debug mode": "可追踪调试模式",
+    "Topic": "主题", "Bug bash": "Bug 集中修复", "Design crit": "设计评审", "Retro": "复盘", "User journey": "用户旅程",
+  };
+  for (const [source, target] of Object.entries(cases)) assert.equal(context.lookupForTest(source), target, source);
+});
+
+test("输入框占位提示翻译为中文而用户输入保持原样", () => {
+  const context = vm.createContext({
+    document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] },
+    Node: { ELEMENT_NODE: 1 },
+  });
+  const code = runtime.replace("const map={};", `const map=${JSON.stringify(dictionary)};`)
+    .replace("function start(){", "globalThis.lookupForTest=lookup;\nfunction start(){");
+  vm.runInContext(code, context);
+  const input = { nodeType: 1, tagName: "INPUT", parentElement: null,
+    matches: selector => selector === 'input,textarea,[contenteditable="true"],[role="textbox"]',
+    closest: () => null, getAttribute: () => null };
+  assert.equal(context.lookupForTest("Search", input, "placeholder"), "搜索");
+  assert.equal(context.lookupForTest("Search", input), undefined);
+  assert.equal(context.lookupForTest("My custom query", input, "placeholder"), undefined);
+});
+
+test("活动日志动态文案保留参数且不修改用户输入", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify(dictionary)+";").replace("function start(){", "globalThis.lookupForTest=lookup;\nfunction start(){"), context);
+  const cases = [
+    ["Disabled AI content training for Design & Research", "已为 Design & Research 禁用 AI 内容训练"],
+    ["Enabled AI content training for 示例组织", "已为 示例组织 启用 AI 内容训练"],
+    ["Disabled AI features for Alpha", "已为 Alpha 禁用 AI 功能"],
+    ["Enabled AI features for Beta", "已为 Beta 启用 AI 功能"],
+    ["person@example.com purchased 1,000 AI credits/mo", "person@example.com 购买了每月 1,000 AI 点数"],
+    ["person@example.com disabled pay as you go AI credits", "person@example.com 禁用了按量付费 AI 点数"],
+    ["Rejected person@example.com’s request for additional AI credits", "已拒绝 person@example.com 申请更多 AI 点数的请求"],
+  ];
+  const input = { nodeType: 1, tagName: "INPUT", parentElement: null, matches: selector => selector === 'input,textarea,[contenteditable="true"],[role="textbox"]', closest: () => null, getAttribute: () => null };
+  for (const [source, translated] of cases) {
+    assert.equal(context.lookupForTest(source), translated);
+    assert.equal(context.lookupForTest(source, input), undefined);
+  }
+  assert.equal(context.lookupForTest("person@example.com purchased unlimited AI credits/mo"), undefined);
+  assert.equal(context.lookupForTest("Disabled AI features for"), undefined);
+});
+
+test("桌面应用与锁定团队动态文案完整匹配", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1, TEXT_NODE: 3 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify(dictionary)+";").replace("function start(){", "globalThis.lookupForTest=lookup;globalThis.translateTextNodeForTest=translateTextNode;\nfunction start(){"), context);
+  const cases = {
+    "Pinned split tab group: Design, Prototype": "已固定分屏标签组：Design、Prototype",
+    "Figma Desktop App version 126.8.18": "Figma 桌面应用版本 126.8.18",
+    "Copyright © 2026 Figma, Inc.": "版权所有 © 2026 Figma, Inc.",
+    "This version of Figma is not intended for use on Apple Silicon. Please download Figma again from the Figma Downloads page to ensure that the correct version is installed.": "此版本的 Figma 不适用于 Apple Silicon。请从 Figma 下载页面重新下载 Figma，以确保安装了正确的版本。",
+    "This version of Figma is not intended for use on Windows on Arm. Please download Figma again from the Figma Downloads page to ensure that the correct version is installed.": "此版本的 Figma 不适用于 Windows on Arm。请从 Figma 下载页面重新下载 Figma，以确保安装了正确的版本。",
+    "This is likely happening because your corporate network is using a proxy. This can be resolved by adding non-Figma origins used by your proxy to your AllowedOriginHosts setting. Click the button below to visit our Help Center for details.": "这可能是因为您的企业网络正在使用代理。您可以将代理使用的非 Figma 源添加到 AllowedOriginHosts 设置中来解决此问题。点击下方按钮访问帮助中心了解详情。",
+    "Figma Make may load project configuration from this folder that can run commands. /Users/example/project": "Figma Make 可能会从此文件夹加载可运行命令的项目配置。\n\n/Users/example/project",
+    "Make will open this repository after cloning. Project configuration and Git metadata in this repository can run commands. /Users/example/repo": "克隆后，Make 将打开此代码库。此代码库中的项目配置和 Git 元数据可能会运行命令。\n\n/Users/example/repo",
+    "You have multiple installations of the Figma Desktop App. Try again after removing the other Desktop App installation at:": "您安装了多个 Figma 桌面应用。请移除其他桌面应用安装，然后重试，位置：",
+    "You are already using the latest version of Figma. Missing a new feature? Try reloading your tabs and check again. If you experience any other issues, please contact support.": "您已在使用最新版本的 Figma。缺少新功能？请重新加载标签页并重试。如果遇到其他问题，请联系支持团队。",
+    "Please enable Camera & Microphone for Figma in System Preferences → Security & Privacy → Privacy.": "请在“系统偏好设置 → 安全性与隐私 → 隐私”中为 Figma 启用相机和麦克风。",
+    "Please enable Camera for Figma in System Preferences → Security & Privacy → Privacy.": "请在“系统偏好设置 → 安全性与隐私 → 隐私”中为 Figma 启用相机。",
+    "Please enable Microphone for Figma in System Preferences → Security & Privacy → Privacy.": "请在“系统偏好设置 → 安全性与隐私 → 隐私”中为 Figma 启用麦克风。",
+    "\"Design.fig\" already exists. Replacing it will overwrite its existing contents.": "“Design.fig”已存在。替换它将覆盖其现有内容。",
+    "Figma app data will reset and the app will restart. You will need to log back into Figma after this is done.": "Figma 应用数据将被重置，应用也会重启。完成后，您需要重新登录 Figma。",
+    "Figma was unable to reset app data and restart. Please contact support for assistance.": "Figma 无法重置应用数据并重启。请联系支持团队寻求帮助。",
+    "Figma needs to be restarted to apply changes.": "Figma 需要重启才能应用更改。",
+    "\"/tmp/design.fig\" could not be saved. Remaining files will not be saved.": "无法保存“/tmp/design.fig”。剩余文件将不会保存。",
+    "Figma was not able to install the update:": "Figma 无法安装更新：",
+    "Microphone access required to talk in Figma Audio. Please enable microphone for Figma in System Preferences → Security & Privacy → Privacy → Microphone.": "需要麦克风权限才能在 Figma Audio 中通话。请在“系统偏好设置 → 安全性与隐私 → 隐私 → 麦克风”中为 Figma 启用麦克风。",
+    "Error navigating to 'https://example.com': ERR_FAILED": "导航至“https://example.com”时出错：ERR_FAILED",
+    "This will update your seat in Professional—you’ll get full access to Dev Mode, FigJam, and Figma Slides.": "这将更新您在 Professional 中的席位—您将获得 Dev Mode、FigJam 和 Figma Slides 的完整访问权限。",
+    "This will update your seat in Professional—you’ll get full access to Figma Design, Figma Sites, Dev Mode, FigJam, and Figma Slides.": "这将更新您在 Professional 中的席位—您将获得 Figma Design、Figma Sites、Dev Mode、FigJam 和 Figma Slides 的完整访问权限。",
+    "Follow Alex": "跟随 Alex",
+    "For higher AI credit limits in Professional, request an upgrade to a Full seat.": "如需在 Professional 中获得更高的 AI 额度上限，请申请升级为完整席位。",
+    "For higher MCP tool call limits in Professional, request an upgrade to a Full seat.": "如需在 Professional 中获得更高的 MCP 工具调用上限，请申请升级为完整席位。",
+    "Cui. is locked and cannot add more files.": "Cui. 已锁定，无法再添加更多文件。",
+    "Viewed 1 day ago": "已于 1 天前 查看",
+    "Edited 7 hours ago": "编辑于 7 小时前",
+    "All fields marked with * are required": "标有 * 的字段均为必填项",
+    "2 creators have riffed on this": "2 位创建者对其进行了改编",
+  };
+  for (const [source, target] of Object.entries(cases)) assert.equal(context.lookupForTest(source), target, source);
+  const viewedParent = { nodeType: 1, textContent: "Viewed 1 day ago", parentElement: null };
+  const viewedNode = { nodeType: 3, parentElement: viewedParent };
+  assert.equal(context.lookupForTest("Viewed", viewedNode), "查看于");
+  const editedParent = { nodeType: 1, textContent: "Edited 7 hours ago", parentElement: null };
+  const editedNode = { nodeType: 3, parentElement: editedParent };
+  assert.equal(context.lookupForTest("Edited", editedNode), "编辑于");
+  const editedCnParent = { nodeType: 1, textContent: "编辑 7 小时前", parentElement: null };
+  const editedCnNode = { nodeType: 3, parentElement: editedCnParent };
+  assert.equal(context.lookupForTest("Edited", editedCnNode), "编辑于");
+  const requiredNode = { nodeType: 3, nodeValue: "All fields marked with * are required", parentElement: { nodeType: 1, textContent: "All fields marked with * are required", parentElement: null } };
+  context.translateTextNodeForTest(requiredNode);
+  assert.equal(requiredNode.nodeValue, "标有 * 的字段均为必填项");
+});
+
+test("官方文案空白差异可匹配且不覆盖明确译文或用户输入", () => {
+  const extra = {
+    "Whitespace\nexample": "空白示例",
+    "Conflicting\nexample": "第一种含义",
+    "Conflicting  example": "第二种含义",
+    "Explicit example": "明确译文",
+    "Explicit\nexample": "其他译文",
+  };
+  const context = vm.createContext({
+    document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] },
+    Node: { ELEMENT_NODE: 1 },
+  });
+  vm.runInContext(runtime.replace("const map={};", `const map=${JSON.stringify({...dictionary, ...extra})};`)
+    .replace("function start(){", "globalThis.lookupForTest=lookup;\nfunction start(){"), context);
+  const lookup = context.lookupForTest;
+  assert.equal(lookup("PDF import is not supported\n"), "不支持导入 PDF\n");
+  assert.equal(lookup("PSD import is not supported"), "不支持导入 PSD");
+  assert.equal(lookup("  Whitespace   example\n"), "  空白示例\n");
+  assert.equal(lookup("Conflicting example"), undefined);
+  assert.equal(lookup("Explicit example"), "明确译文");
+  assert.equal(lookup("Unknown whitespace example"), undefined);
+  const input = { nodeType: 1, tagName: "INPUT", parentElement: null,
+    matches: selector => selector === 'input,textarea,[contenteditable="true"],[role="textbox"]',
+    closest: () => null, getAttribute: () => null };
+  assert.equal(lookup("Whitespace example", input), undefined);
+  assert.equal(lookup("Whitespace example", input, "placeholder"), "空白示例");
+});
+
+test("字体特性和外部系统术语保留准确含义", () => {
+  const expected = {
+    "Above-base forms": "基字上方字形",
+    "Above-base mark positioning": "基字上方附标定位",
+    "Below-base forms": "基字下方字形",
+    "Half forms": "辅音半形",
+    "Math script style alternates": "数学上下标替代字形",
+    "Flattened ascent forms": "扁平重音符号字形",
+    "Vovel jamo forms": "韩文中声字母字形",
+    "Required variation alternates": "可变字体必需替代字形",
+    "Google leaderboard ad": "Google 页首横幅广告",
+    "YouTube ad (companion)": "YouTube 广告（随播横幅）",
+    "Quarterly true-up": "季度补差结算",
+    "Screen & System Audio Recording": "录屏与系统录音",
+  };
+  const context = vm.createContext({
+    document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] },
+    Node: { ELEMENT_NODE: 1 },
+  });
+  vm.runInContext(runtime.replace("const map={};", `const map=${JSON.stringify(dictionary)};`)
+    .replace("function start(){", "globalThis.lookupForTest=lookup;\nfunction start(){"), context);
+  for (const [source, translated] of Object.entries(expected)) {
+    assert.equal(dictionary[source], translated, source);
+    assert.equal(context.lookupForTest(source), translated, source);
+  }
+});
 
 test("关键累积翻译不会被后续更新覆盖", () => {
   const expected = {
@@ -23,6 +201,13 @@ test("关键累积翻译不会被后续更新覆盖", () => {
     "Add object": "添加对象",
     "Add starting point": "添加起始点",
     "Edit objects": "编辑对象",
+    "Inside stroke": "内部描边",
+    "Auto spacing": "自动间距",
+    "The updated layout is more consistent with CSS. The legacy version is available temporarily while you transition.": "新版布局与 CSS 的一致性更好。在迁移期间，旧版布局会暂时可用。",
+    "Shaders have a max resolution of 2048px": "着色器的最大分辨率为 2048 像素",
+    "Remove from recents": "从最近使用中移除",
+    "Import from manifest…": "从清单导入…",
+    "Search": "搜索",
     "English": "英语",
     "日本語": "日语",
     "Français": "法语",
@@ -659,8 +844,17 @@ test("专业名词与代码内容的保护规则仍存在", () => {
   assert.match(runtime, /function localizeLanguageOption/);
   assert.match(runtime, /languageOptionTranslations\.has\(normalized\.toLocaleLowerCase/);
   assert.match(runtime, /if\(languageOption\)return leading\+languageOption\+trailing/);
+  assert.match(runtime, /function localizeAutoLayoutSettingsOption/);
+  assert.match(runtime, /\['between','等距'\]/);
+  assert.match(runtime, /\['legacy','旧版'\]/);
+  assert.match(runtime, /\['updated','新版'\]/);
+  assert.match(runtime, /Auto layout settings\|自动布局设置/);
+  assert.match(runtime, /isAutoLayoutSettingsDialog/);
+  assert.match(runtime, /document\.querySelectorAll/);
+  assert.match(runtime, /if\(autoLayoutSettingsOption\)return leading\+autoLayoutSettingsOption\+trailing/);
+  assert.equal(dictionary.Updated, "更新时间");
   assert.match(runtime, /function isEditableTextContext/);
-  assert.match(runtime, /if\(isEditableTextContext\(element\)\)return undefined/);
+  assert.match(runtime, /if\(isEditableTextContext\(element\)&&attributeName!=='placeholder'\)return undefined/);
   assert.match(runtime, /name!=='data-tooltip'\|\|element\?\.getAttribute\?\.\('data-tooltip-type'\)!=='lookup'/);
   assert.doesNotMatch(runtime, /value\.trim\(\)==='Style'&&translated\.trim\(\)==='样式'/);
   assert.match(runtime, /compactTooltipSourceLabels=new Set\(\['Create component','Visual search'\]\)/);

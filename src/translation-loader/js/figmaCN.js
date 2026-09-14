@@ -46,10 +46,24 @@ delete map.CMYK;
 delete map['BW light'];
 delete map['BW dark'];
 const ciMap=new Map(Object.entries(map).map(([key,value])=>[key.toLocaleLowerCase('en-US'),value]));
+// Match known UI strings whose source whitespace differs from rendered text.
+// Ambiguous normalized keys stay untranslated; explicit keys retain priority.
+const whitespaceMap=new Map(),ambiguousWhitespaceKeys=new Set();
+for(const [key,value] of Object.entries(map)){
+  const normalizedKey=key.trim().replace(/[\u200B-\u200F\u2060\uFEFF]/g,'').replace(/\s+/g,' ').toLocaleLowerCase('en-US');
+  if(!normalizedKey||key.toLocaleLowerCase('en-US')===normalizedKey||ciMap.has(normalizedKey))continue;
+  const normalizedValue=value.trim();
+  if(whitespaceMap.has(normalizedKey)&&whitespaceMap.get(normalizedKey)!==normalizedValue)ambiguousWhitespaceKeys.add(normalizedKey);
+  else whitespaceMap.set(normalizedKey,normalizedValue);
+}
+for(const key of ambiguousWhitespaceKeys)whitespaceMap.delete(key);
 const languageOptionTranslations=new Map([
   ['english','英语'],['日本語','日语'],['français','法语'],['deutsch','德语'],
   ['español (españa)','西班牙语（西班牙）'],['español (latinoamérica)','西班牙语（拉丁美洲）'],
   ['한국어','韩语'],['português (brasil)','葡萄牙语（巴西）']
+]);
+const autoLayoutSettingsTranslations=new Map([
+  ['inside stroke','内部描边'],['auto spacing','自动间距'],['between','等距'],['legacy','旧版'],['updated','新版']
 ]);
 const shaderOnlyMap={"X":"横向","Y":"纵向","R":"半径","A":"角度","Light":"光照","Hex":"六边形","Hexagon":"六边形","Hexagonal":"六边形"};
 const generatedLayerMap={frame:'画框',rectangle:'矩形',ellipse:'椭圆',polygon:'多边形',star:'星形',line:'直线',vector:'矢量',group:'组',section:'分区',component:'组件',instance:'实例',text:'文本'};
@@ -370,13 +384,1067 @@ function localizeLanguageOption(element,normalized){
   const text=(dialog.textContent||'').replace(/\s+/g,' ').trim();
   return /(?:Change languages?|修改语言)/i.test(text)?translated:undefined;
 }
-function lookup(value,node){
+function localizeAutoLayoutSettingsOption(element,normalized){
+  const translated=autoLayoutSettingsTranslations.get(normalized.toLocaleLowerCase('en-US'));
+  if(!translated||!element)return undefined;
+  const dialog=element.closest?.('[role="dialog"]');
+  const isAutoLayoutSettingsDialog=candidate=>/(?:Auto layout settings|自动布局设置)/i.test((candidate?.textContent||'').replace(/\s+/g,' ').trim());
+  if(isAutoLayoutSettingsDialog(dialog))return translated;
+  if(!/^(?:between|legacy|updated)$/i.test(normalized))return undefined;
+  return Array.from(document.querySelectorAll?.('[role="dialog"]')||[]).some(isAutoLayoutSettingsDialog)?translated:undefined;
+}
+// Only explicitly reviewed single-parameter templates participate in runtime matching.
+// Do not compile the entire dictionary: arbitrary names, rich text and ICU need separate review.
+const reviewedSingleParameterSources = [
+"{upgrader_name} accepted invite to org",
+"{upgrader_name} ran a plugin",
+"{upgrader_name} was provisioned with a paid seat by SCIM",
+"Changed {name} to allow anyone with the link to edit",
+"Removed link access for {name}",
+"Changed {name} to allow anyone with the link to view",
+"Changed {name} to allow anyone with a prototype link to view",
+"Deleted codebase import(s) for {repoIdentifiers}",
+"Enabled idle session timeout for {duration}",
+"Custom settings for AI features were removed for the {workspaceName} workspace and they will now be disabled according to the organization’s settings",
+"Custom settings for AI features were removed for the {workspaceName} workspace and they will now be enabled according to the organization’s settings",
+"Custom settings for enabling asset approval in Buzz were removed for {workspaceName}",
+"Custom settings for requiring asset approval in Buzz were removed for {workspaceName}",
+"Exported the {workspaceName} workspace team list to CSV",
+"Removed {userEmail} from the organization's Draft",
+"{upgrader_name} joined with a paid seat due to the organization's default role",
+"{upgrader_name} was upgraded when an owner left the team",
+"{upgrader_name} was upgraded from Dev Mode beta per your org's contract",
+"Tentative access to a {seatType} seat ended because a different seat was requested.",
+"Tentative access to a {seatType} seat ended because seat request was approved.",
+"No longer has access to a {seatType} seat because admin declined the seat request.",
+"Granted tentative access to a {seatType} seat because of a seat request.",
+"These drafts belonged to users who were removed from {teamName}",
+"Changed Make & Agent network access hostnames to {newHosts}",
+"Figma support enabled upgrade request rerouting for {currentAudience}",
+"Changed the guest invite setting to {guestSetting}",
+"Disabled Figma Support visibility for {orgName}",
+"Enabled Figma Support visibility for {orgName}",
+"Joined the external team {teamName}",
+"Left the external team {teamName}",
+"Created user group {userGroupName}",
+"Deleted user group {userGroupName}",
+"Approval setting for this seat at the time of request was {approvalSetting}.",
+"Disabled open sessions for the {orgName} organization",
+"Enabled open sessions for the {orgName} organization",
+"Moved {name} to the trash",
+"Ended an open session on {name}",
+"Started an open session on {name}",
+"Disabled REST API plan access tokens for {orgName}",
+"Enabled REST API plan access tokens for {orgName}",
+"Requested an upgrade to {seatType}.",
+"Restored the {folderName} project",
+"Restored the {folderName} folder",
+"Changed the org access of the {folderName} project to edit",
+"Changed the org access of the {folderName} folder to edit",
+"Removed org access for the {folderName} project",
+"Created shader effect {shaderEffectName}",
+"Deleted shader effect {shaderEffectName}",
+"Updated shader effect {shaderEffectName}",
+"Created shader fill {shaderFillName}",
+"Deleted shader fill {shaderFillName}",
+"Updated shader fill {shaderFillName}",
+"Set a password for site/app {name}",
+"Set a password for specific pages of site/app {name}",
+"Unset the password for site/app {name}",
+"Unset the password for specific pages of site/app {name}",
+"Joined the external team {teamName}",
+"Left the external team {teamName}",
+"Removed requirement for widget approval for {org}",
+"Updated {org} to require approval for widgets",
+"Installed widget {widgetName} for everyone",
+"Changed {userEmail}’s AI credit limit via SCIM",
+"Removed {userEmail}’s access to paid AI credits",
+"Removed paid credit access from {userEmail}",
+"Gave {userEmail} access to paid AI credits",
+"Gave paid credit access to {userEmail}",
+"Changed default AI credit increase to {newAmount} credits",
+"Removed default guest access duration of {oldDays} days",
+"Set default guest access duration to {days} days",
+"Disabled external collaboration controls in the {orgName} organization",
+"Enabled external collaboration controls in the {orgName} organization",
+"Created a new file in the {folder} project",
+"Created a new file in the {folder} folder",
+"Duplicated the {name} file",
+"Exported the contents of the {name} file",
+"Downloaded an image from the {name} file",
+"Viewed a public file in external organization {orgName}",
+"All of {orgName}'s users have been assigned to billing groups",
+"All of {orgName}'s users have been assigned to workspaces",
+"Select unassigned users to add to the {licenseGroupName} billing group.",
+"Select unassigned users to add to the {workspaceName} workspace.",
+"Select unassigned teams to add to the {workspaceName} workspace.",
+"Assign teams to {workspaceName}",
+"Approving adds {credits} credits to their monthly limit.",
+"Request approved. {user} was granted full paid credit access.",
+"AI credit limit increase requested by {name}",
+"This will add {credits} credits to their monthly limit going forward.",
+"You are removing paid AI credit access. This may impact {name}’s active work.",
+"{name}’s AI credit request",
+"You are adding a monthly limit to {name}’s paid AI credit access. This may impact their active work.",
+"All {orgName} requests",
+"Approved {app} for everyone who requested it",
+"Requested by {name}",
+"Showing the {count} most recent people who requested this app.",
+"Not found ({statusCode})",
+"Authentication required ({statusCode})",
+"Connection error: {errorCode}",
+"Error code: {errorCode}",
+"Server error ({statusCode})",
+"Temporary outage ({statusCode})",
+"Tabs in window {windowIndex}",
+"Close tab {tabTitle}",
+"Mute tab {tabTitle}",
+"Pinned tab: {tabTitle}",
+"Pinned split tab: {tabTitle}",
+"Split tab: {tabTitle}",
+"Mentioned by {handle}",
+"Spotlight on {handle}",
+"Offloaded tab: {memory}MB freed up",
+"Memory usage: {memory}MB",
+"Accepted invite as a publisher to widget {widgetName}",
+"Uninstalled widget {widgetName} for everyone",
+"Asset approval in Buzz has been changed to required for {workspaceName}",
+"Asset approval in Buzz has been disabled for {workspaceName}",
+"Asset approval in Buzz has been enabled for {workspaceName}",
+"Asset approval in Buzz has been changed to optional for {workspaceName}",
+"Created a new workspace called {workspaceName}",
+"Deleted the {workspaceName} workspace",
+"Created SCIM group {name}",
+"Deleted SCIM group {name}",
+"Archived branch {name}",
+"Created branch {name}",
+"Deleted branch {name}",
+"Merged branch {name}",
+"Unarchived branch {name}",
+"Updated branch {name}",
+"Confirmed seat renewals for {orgName}.",
+"Confirmed plan renewal for {orgName}.",
+"Custom domain {domain} activated",
+"Custom domain {domain} removed",
+"Published a site/app to {domain}",
+"Unpublished a site/app from {domain}",
+"Deleted the {teamName} team",
+"Exported the {billingGroupName} billing group members list to CSV",
+"Exported the {teamName} team out of the organization",
+"Exported the {workspaceName} workspace members list to CSV",
+"Imported the {teamName} team into the organization",
+"Restored the {teamName} team",
+"{teamName} wants to transfer their team into the organization",
+"Joined call on file {figFileKey}",
+"Disabled the {modelName} Figma Weave AI model",
+"Enabled the {modelName} Figma Weave AI model",
+"Disabled featured connectors for {orgName}",
+"Enabled featured connectors for {orgName}",
+"Disabled custom connectors for {orgName}",
+"Enabled custom connectors for {orgName}",
+"Published npm registry package {packageName}",
+"Unpublished npm registry package {packageName}",
+"Created npm registry scopes: {scopes}",
+"Deleted npm registry scopes: {scopes}",
+"Disabled domain capture in the {orgName} organization",
+"Enabled domain capture in the {orgName} organization",
+"Joined the external org {orgName}",
+"Left the external org {orgName}",
+"Created a new plan access token with scopes: {scopes}",
+"Refreshed the {tokenName} plan access token",
+"Removed requirement for plugin approval for {org}",
+"Updated {org} to require approval for plugins",
+"Installed plugin {pluginName} for everyone",
+"Accepted invite as a publisher to plugin {pluginName}",
+"Uninstalled plugin {pluginName} for everyone",
+"Agreed to the organization's {title} policy",
+"Disabled the organization's {title} policy",
+"Enabled the organization's {title} policy",
+"Event of type {eventName} is not configured for viewing in Admin. Ask for help in #feat-support-activity-logs.",
+"Changed the org access of the {folderName} project to view",
+"Changed the org access of the {folderName} folder to view",
+"Removed org access for the {folderName} folder",
+"Changed the team access of the {folderName} project to edit",
+"Changed the team access of the {folderName} folder to edit",
+"Removed team access for the {folderName} project",
+"Removed team access for the {folderName} folder",
+"Changed the team access of the {folderName} project to view",
+"Changed the team access of the {folderName} folder to view",
+"Approved the transfer of the {folderName} project to the organization",
+"Approved the transfer of the {folderName} folder to the organization",
+"Approved the transfer of a copy of the {folderName} project to the organization",
+"Approved the transfer of a copy of the {folderName} folder to the organization",
+"Trashed the {folderName} project",
+"Trashed the {folderName} folder",
+"Installed Figma's GitHub app for {login}",
+"Suspended Figma's GitHub app for {login}",
+"Uninstalled Figma's GitHub app for {login}",
+"Unsuspended Figma's GitHub app for {login}",
+"Granted Figma's GitHub app access to repository {repository}",
+"Disabled Figma's GitHub app access to repository {repository}",
+"Enabled Figma's GitHub app access to repository {repository}",
+"Removed Figma's GitHub app access to repository {repository}",
+"Added an IdP configuration with tenant ID {sp_tenant_id}",
+"Removed an IdP configuration with tenant ID {sp_tenant_id}",
+"Updated an IdP configuration with tenant ID {sp_tenant_id}",
+"Allowlisted IP range {ip_address}",
+"Removed IP range {ip_address} from the allowlist",
+"Added network access restriction for IP range {ip_address} (Not yet enabled)",
+"Removed network access restriction for IP range {ip_address}",
+"Disabled network access restriction for IP range {ip_address}",
+"Enabled network access restriction for IP range {ip_address}",
+"Selected the {workspaceName} workspace",
+"Imported Storybook project {projectName}",
+"Deleted Storybook project {projectName}",
+"Updated design files for Storybook project {projectName}",
+"Deleted a storybook build from Storybook project {projectName}",
+"You now have a Full seat in {planName} — you have full access to Figma Design, Figma Sites, Dev Mode, FigJam, and Figma Slides.",
+"If you’re receiving this message in error, {supportLink}.",
+"Prepaid credits expire {date}",
+"Total {seatType} seats",
+"Approve request for {name}",
+"Request details for {name}",
+"Reminder sent {time}",
+"App access requested by {name}",
+"Request from {requesterName} approved",
+"All requests in {planName}",
+"Welcome to {planName} admin",
+"Manage paid credits for {userName}",
+"No results found for {searchQuery}",
+"Cloned {repoName}",
+"Cloning {repoName}",
+"Uploaded {folderName}",
+"Uploading {folderName}",
+"Importing {repoName}",
+"Seat type: {seatType}",
+"Monthly reset: {resetsAt}",
+"Slide {number}",
+"Agent - {name}",
+"{seatType} seats",
+"You can view and manage all of the seat requests from people in {planName}.",
+"Approving adds one paid {seatType} seat.",
+"This will use one available {seatType} seat.",
+"{user}'s request",
+"Approving adds 1 {seatType} seat.",
+"A teammate requested a {seatType} for another teammate",
+"{requesterName} sent you a reminder",
+"Last requested {time}",
+"{planName} admin",
+"{monthlyCredits} paid credits used",
+"{paygBudget} pay as you go budget",
+"{prepaidCredits} Prepaid credits",
+"{prepaidCredits} used",
+"{user} was auto-approved when they created a file.",
+"{user} was auto-approved when they used Dev Mode in a file.",
+"{user} was auto-approved when they shared a file from their drafts.",
+"{user} was auto-approved when they began editing a file.",
+"{user} was upgraded.",
+"Choose how many paid AI credits {user} can use each month.",
+"Unless one is available, a new {seatName} seat will be added to your team and shown on your next invoice.",
+"Unless one is available, a new {seatName} seat will be added to your team and prorated on your next invoice.",
+"Request approved. {requesterName} moved to a Collab seat.",
+"Request approved. {requesterName} moved to a Content seat.",
+"Request approved. {requesterName} moved to a Dev seat.",
+"Request approved. {requesterName} moved to a Full seat.",
+"{billableProductKey} seat",
+"Amount of paid credits shared by members of {poolName}.",
+"Remove {chip} from search",
+"You have no access to AI credits in {planName}.",
+"We've let your admins know that your billing group in {planName} is out of credits.",
+"We’ve let your admins know that {planName} is out of credits.",
+"We’ve sent your request for more to {planName} admins.",
+"Your access to your billing group’s shared credits is limited to {numCredits} credits.",
+"Was added to the {planName} plan before this information was tracked",
+"Became the owner after creating the {planName} plan",
+"Was automatically added to the {planName} plan via domain capture",
+"Automatically added to the {planName} plan when the organization moved to Figma for Government",
+"Was added to the {planName} plan by Figma Support",
+"Joined the {planName} plan when they clicked a join link",
+"Joined the {planName} plan when it was created",
+"Was added to the {planName} plan after requesting to join",
+"Joined the {planName} plan when signing in with SSO",
+"Was added to the {planName} plan",
+"{user} was auto-approved when they ran a plugin.",
+"{user} was auto-approved when they moved their draft file into a shared project.",
+"{user} was auto-approved when they moved their draft file into a shared folder.",
+"{user} was auto-approved when they published a site.",
+"{user} was auto-approved via an available seat when they ran a plugin.",
+"{user} was auto-approved via an available seat when they published a site.",
+"{user} was auto-approved via an available seat when they created a file.",
+"{user} was auto-approved via an available seat when they used Dev Mode in a file.",
+"{user} was auto-approved via an available seat when they shared a file from their drafts.",
+"{user} was auto-approved via an available seat when they started editing a file.",
+"{user} was auto-approved via an available seat when they moved their draft file into a shared project.",
+"{user} was auto-approved via an available seat when they moved their draft file into a shared folder.",
+"{user} was assigned the Full seat when they joined the organization.",
+"{user} was assigned the Full seat when they joined the team.",
+"This limit is higher than the total amount of paid credits in {poolName} for this billing group. They’ll only be able to use what is available.",
+"This limit is higher than the total amount of paid credits in {poolName}. They’ll only be able to use what is available.",
+"Figma file \"{name}\" is attached",
+"AI model, {model}",
+"Welcome, {firstName}! Here are a few ways the Figma agent can help you work:",
+"Budget recently updated to {monetaryValue}/mo",
+"We sent a confirmation email to {email}!",
+"{planName} received additional credits.",
+"Heads up: You’re running {low} on AI credits.",
+"You’re running {low} on AI credits.",
+"You’re out of daily AI credits for your {seatType} seat.",
+"You’re out of daily AI credits in {planName}. Upgrade your plan to keep prompting today.",
+"If you want to keep using AI credits, send a request to an admin at {planName}.",
+"{poolName} is low on credits and doesn’t have enough to cover this user’s limit.",
+"Your access to your billing group’s shared credits is limited to {numCredits} credits a month.",
+"{planName} is out of credits.",
+"{planName} is out of credits. We’ve let your admins know.",
+"Split monthly AI credits between billing groups. The rest of {orgName} can use any credits left over.",
+"We sent an email to {email} with instructions to reset your password!",
+"We sent a verification email to {email}. Please check it to verify your new email.",
+"This transfer can’t be accepted because {sourceName} doesn’t have nested folders enabled.",
+"{assetName} verified",
+"This email isn't associated with the {destinationType} linked above. Please confirm that you have the right email.",
+"No results for \"{query}\"",
+"Clear {tagType} tag",
+"Search across {orgText}",
+"Choose an account to join {destination}",
+"Choose an account to open {destination}",
+"Choose account to add to the Figma {appDescriptor} app",
+"Continue with {appDescriptor} app",
+"Create an account to collaborate on {displayName}",
+"Did you mean {domainSuggestion}?",
+"Please assign a new admin for {currentOrgName} before changing your email domain.",
+"User {EMAIL} cannot join the org - they are deprovisioned",
+"Please downgrade yourself to a member in {currentOrgName} before changing your email domain.",
+"User {EMAIL} is blocked from joining the org",
+"Invalid authentication method: {METHOD}",
+"Join links have been disabled for {TEAM_NAME}",
+"Only view-level links are enabled for {TEAM_NAME}",
+"Log in as {email}",
+"Log in to collaborate on {displayName}",
+"Authenticated as {email}",
+"Cancel and do not join {orgName}",
+"Connected cell phone number: {phoneNumber}",
+"Open the {appDescriptor} app",
+"{title} is updating.",
+"{label}, hide agent work details",
+"{label}, show agent work details",
+"Go to selection on canvas: {label}",
+"+{count} more",
+"Libraries, {count} selected",
+"{command}, skill",
+"Admins at {entity}",
+"{percent}% there…",
+"Create {numVariations} visual variations of this frame that keep the same structure but refresh imagery and styling.",
+"Additional instructions: {text}",
+"Keep the {keptContentTypes}.",
+"Replace the {replacedContentTypes}.",
+"Number of variations: {numVariations}",
+"Change the {changedAspects}.",
+"Create {numVariations} variations of this design.",
+"Keep the {keptAspects}.",
+"A Full seat in {planName} includes higher MCP tool call limits and full access to Figma Make, Figma Design, Figma Sites, Dev Mode, FigJam, and Figma Slides",
+"You’ve been invited to edit this Figma Make file. This will update your seat in {planName}—you’ll get full access to Figma Make, Figma Design, Figma Sites, Dev Mode, FigJam, and Figma Slides.",
+"This will update your seat in {planName}—you’ll get full access to Figma Sites, Figma Design, Dev Mode, FigJam, and Figma Slides.",
+"A Full seat in {planName} includes higher AI credit limits and full access to Figma Sites, Figma Design, Dev Mode, FigJam, and Figma Slides.",
+"A Full seat in {planName} includes higher MCP tool call limits and full access to Figma Sites, Figma Design, Dev Mode, FigJam, and Figma Slides.",
+"You’ve been invited to edit this Figma Sites file. This will update your seat in {planName}—you’ll get full access to Figma Sites, Figma Design, Dev Mode, FigJam, and Figma Slides.",
+"This will update your seat in {planName}—you’ll get full access to Figma Slides and FigJam.",
+"A Collab seat in {planName} includes higher AI credit limits and full access to Figma Slides and FigJam.",
+"You’ve been invited to edit this Figma Slides file. This will update your seat in {planName}—you’ll get full access to Figma Slides and FigJam.",
+"This will update your seat in {planName}—you’ll get full access to Figma Weave, Figma Make, Figma Design, Figma Sites, Dev Mode, FigJam, and Figma Slides.",
+"A Full seat in {planName} includes higher AI credit limits and full access to Figma Weave, Figma Make, Figma Design, Figma Sites, Dev Mode, FigJam, and Figma Slides.",
+"A Full seat in {planName} includes higher MCP tool call limits and full access to Figma Weave, Figma Make, Figma Design, Figma Sites, Dev Mode, FigJam, and Figma Slides.",
+"You’ve been invited to edit this Figma Weave file. This will update your seat in {planName}—you’ll get full access to Figma Weave, Figma Make, Figma Design, Figma Sites, Dev Mode, FigJam, and Figma Slides.",
+"You’re about to get full access to {licenseType}!",
+"Move to a {seatName} seat for more AI credits",
+"Move to a {seatName} seat for more MCP tool calls",
+"{fileName} is already opened in another tab. Continue editing in that tab, or close it before opening here.",
+"There are unsynced changes to {fileName} from when you were offline. Open the file to sync the changes.",
+"Changes you made to {fileName} while offline haven't synced yet.",
+"{editLabel}, custom image uploaded",
+"{editLabel}, no image uploaded",
+"People at {creditLimitText}",
+"To edit this Education team file from {teamName}, verify that you're a student or educator.",
+"A new version of {editorType} is available",
+"Ask any {orgName} admin to move it into a different project.",
+"Ask any {orgName} admin to move it into a different folder.",
+"Ask any {teamName} admin to move it into a different project.",
+"Ask any {teamName} admin to move it into a different folder.",
+"{teamName} added new paid seats after the subscription was cancelled. To restore access, please ask your team admin to reactivate the subscription or downgrade some people's seats.",
+"{planName} members who run out of seat credits can use these credits. They’ll reset each month until your plan renewal.",
+"Please pay outstanding invoices to add credits to {planName}.",
+"Update how many credits {planName} members share each month, or add a new pay as you go budget for some extra flexibility.",
+"Update how many credits {planName} members share each month, or edit your pay as you go budget for extra flexibility.",
+"Update how many credits {planName} members share each month.",
+"Maximum budget: {priceString}/mo",
+"Minimum budget: {priceString}/mo",
+"Monthly maximum set to {priceString}/mo",
+"Failed to save credits for {billingGroupName}",
+"Credits for {billingGroupName} saved",
+"This will assign {percentage}% of your organization’s credits.",
+"Assign AI credits to {billingGroupName}",
+"{billingGroupName} will only use your organization’s paid monthly credits moving forward.",
+"{billingGroupName} will only use your organization’s AI credits moving forward.",
+"Manage credits for {billingGroupName}",
+"{billingGroupName} will not have access to any paid credits moving forward.",
+"New billing group ''{workspaceName}'' created",
+"Updated ''{workspaceName}'' billing group",
+"New available font: {firstFont}",
+"{propertyLabel} applied",
+"{propertyLabel} modified",
+"{propertyLabel} removed",
+"Add template {name}",
+"{entityName} templates",
+"See all files in {projectName}",
+"See all {categoryTitle}",
+"Use template {name}",
+"Preview thumbnail for exporting asset {name}",
+"{processName} finished.",
+"{processName} started.",
+"Choose a seat type for everyone in {teamName}.",
+"Last edited {relativeTime}",
+"Click to connect to {collectionName}",
+"Click to connect webpage to {collectionName}",
+"Click to connect to {fieldName}",
+"Archive {branchName}",
+"Copy link to {branchName}",
+"Send {numSelectedNodes} selected to Figma Buzz",
+"Send {nodeName} to Figma Buzz",
+"Pick {option} changes for all conflicts",
+"Color stop {index}",
+"Leave a comment for {ownerHandle} and other reviewers (optional)",
+"Leave a comment for {ownerHandle} (optional)",
+"Conflicts with {sourceFileName} must be resolved to merge this branch",
+"Merging {branchName} changes",
+"You don't have edit access in {fileName}, so you can't merge this yourself. We suggest adding someone with edit access here.",
+"You don't have edit access in {fileName}, so you can't merge this yourself. We suggest adding one of these people with edit access:",
+"Only editors of {sourceFileName} can merge this branch",
+"You are able to merge this branch, along with other editors of {sourceFileName}",
+"New branch {link} created",
+"Branch {link} updated from main file",
+"Branch merged into {link} and archived",
+"Branch updated from {link}",
+"{versionText} (linked version)",
+"Press {shortcut} to add to version history while editing.",
+"Version editors, {numEditors} total",
+"Restored version: {label}",
+"Viewing {label}",
+"Just click {spotlightMeButtonText} in the dropdown to lead your teammates around the file.",
+"Dismiss request to spotlight from {nominatorName}",
+"Take over spotlight from {currentPresenter}",
+"Following {observedUserName}",
+"{nominatorName} is asking you to spotlight",
+"Switching to {presenterName}…",
+"Stop following {observedUserName}",
+"Asked {userName} to spotlight",
+"{userName} left the spotlight",
+"Click to follow {username}",
+"Click to unfollow {username}",
+"Add this ID to your {filename} file",
+"Add up to {maxCreatorsPerResource} additional creators",
+"Add up to {maxMedia} images and videos to your carousel",
+"Add up to {maxMedia} images to your carousel",
+"Add up to {maxTagsPerResource} more tags, separated by commas or tabs",
+"Add up to {maxTagsPerResource} tags, separated by commas or tabs",
+"Cover art image exceeds max size of {maxResourceSize}MB",
+"Publishing on Community is subject to the {creatorAgreement}.",
+"Description must be at most {maxLength} characters long",
+"{filename} not found",
+"{filename} must be a jpeg or png",
+"{filename} must be mp4, webm, or quicktime",
+"Failed to read {filename}",
+"Give up to {maxCreatorsPerResource} creators credit by name or @username",
+"I agree to the {termsOfService}",
+"Invalid ID in {filename}",
+"Kit will be published to {entityName}",
+"Name must be at most {maxLength} characters long",
+"Name must be at least {minLength} characters long",
+"Review issues ({count})",
+"Ready to publish ({count})",
+"Changes to publish ({count})",
+"No changes ({count})",
+"Please add this to your {filename} file",
+"Let people try out your resource in a playground file. Create your own or {useTemplateLink}",
+"{errorStringPrefix} cannot be empty",
+"Profile handle cannot be longer than {maxLength} characters",
+"Publish to the {lineBreak} Figma Community",
+"Select up to {maxTagsPerResource} tags to help people discover your resource",
+"Select up to {maxTagsPerResource} tags",
+"A skill with this name already exists in {planName}.",
+"Support contact must be at most {maxLength} characters long",
+"{tag} tag is repeated more than once",
+"{tag} is not a valid value from the list",
+"Use up to {maxLength} characters (letters, numbers, or _)",
+"You can add up to {maxTagsPerResource} custom tags",
+"You can only upload up to {maxMedia} images. Please update.",
+"You can only upload up to {maxMedia} images and videos. Please update.",
+"You can only upload up to {maxVideos} videos. Please update.",
+"Update instances of {componentName}",
+"Updates to components, styles, or variables{lineBreak}will show up here as they become available.",
+"Opened “{fileName}” in Figma app",
+"Opening “{fileName}” in Figma app…",
+"Your Figma desktop app needs an update to continue working. Get the latest version from our {downloadsPageLink}.",
+"{language} code",
+"Scale factor for scaling pixels into {unitName} units",
+"Unit: {unit} and preferences",
+"Unit: {unit}",
+"Only apply {rem} on text properties",
+"Use {scaledUnit}",
+"This will stop {currentAutoRunPluginName} from running automatically when you open a file.",
+"Enable auto run for {pluginName}?",
+"Values are relative to parent ({name})",
+"{value} is typically used in iOS and isn’t available in browsers yet. Try another design solution for broader browser compatibility.",
+"Language: {codeLanguage}",
+"Go to parent component: {name}",
+"{componentName} was connected",
+"{componentName} was disconnected",
+"Skipped {componentName}",
+"Improve MCP server performance by connecting design components to your codebase. {value}",
+"Publish components to a library, then you can connect them to your codebase with Code Connect. {value}",
+"Removed Skipped from {componentName}",
+"Storybook connection for {componentName} deleted",
+"No layer with id \"{codeConnectId}\" found in selected component/variant",
+"Child layer named \"{layerName}\" not found in selected component/variant",
+"Property \"{propertyName}\" not found. The design file might not be using the latest version of the design library",
+"Code Connect is not set up for this component. {learnMore}",
+"Your org has set up Code Connect, and this component does not exist in your codebase. {learnMore}",
+"Unit (for {languageOrPlugin})",
+"{org_name} doesn’t allow team members to create their own connectors.",
+"Publish to {org_name}",
+"{server_name} connector",
+"Unpublish {server_name}?",
+"This connector will no longer be available to {org_name} users in Figma.",
+"Unpublished {server_name}",
+"{server_name} tool cancelled",
+"{server_name} connection cancelled",
+"Connect to {server_name}",
+"{server_name} connected",
+"Each organization gets two free active projects. To connect a new one, pause an active project or {upgradeLink}.",
+"Max height: {value}",
+"Max width: {value}",
+"Min height: {value}",
+"Min width: {value}",
+"Generate image: {prompt}",
+"Task {number}",
+"Previewing version {version}",
+"Publishing failed while running {scriptPath}. Ask the agent to fix this for you then try again.",
+"Published! Your app is live at {domain}",
+"You can send up to {maxAttachments} nodes to Figma Make at a time",
+"Pasting your selection from {editorType}",
+"Check within the next few weeks for AI prompting. {learnMoreLink}",
+"Figma Make is not currently available on your plan. {learnMoreLink}",
+"Figma Make is currently only available to Full seats. {learnMoreLink}",
+"You don’t have access to this feature. {learnMoreLink}",
+"Collapse heading {level}",
+"Expand heading {level}",
+"Rename file {fileName}",
+"Anyone at {orgName} with the link",
+"Anyone at {orgName}",
+"You don't have permission to create projects in {teamName}.",
+"You don’t have permission to create folders in {teamName}.",
+"Projects set as invite-only cannot be moved between teams. To complete this operation, enable team access for {projectName} and retry.",
+"Folders set as invite-only cannot be moved between teams. To complete this operation, enable team access for {projectName} and retry.",
+"Projects set as view-only cannot be moved between teams. To complete this operation, enable team edit access for {projectName} and retry.",
+"Folders set as view-only cannot be moved between teams. To complete this operation, enable team edit access for {projectName} and retry.",
+"The file {fileNameText} is currently published as a library, which means:",
+"Are you sure you want to delete {fileName} forever?",
+"You're about to permanently delete the project {folderName} and all of its files.",
+"You’re about to permanently delete the folder {folderName} and all of its files.",
+"You can only drag and drop files created in {planName}",
+"You can only drag and drop folders created in {planName}",
+"You can only drag and drop teams created in {planName}",
+"Are you sure you want to move these files? Members of {projectName} may lose access to some of them",
+"An error occurred while logging out of {emailAddress}",
+"You don't have permission to remove files from {projectName}",
+"Successfully logged out of {emailAddress}",
+"New {fileType} file",
+"Imported to {folderName}",
+"Current location: {projectName}",
+"These files are already in {folderName}",
+"Moving “{fileName}” into this project may result in viewers losing or gaining access based on the permissions within this project.",
+"Moving “{fileName}” into this folder may result in viewers losing or gaining access based on the permissions within this folder.",
+"Move {folderName} to a new team or folder to restore it.",
+"Restore project {folderName}",
+"Restore folder {folderName}",
+"Restore {fileName}",
+"No project or team results matching {query}",
+"No folder or team results matching {query}",
+"Open {folderName}",
+"{userHandle}'s Drafts",
+"{userHandle}'s project",
+"To move this file, you need to be granted edit access to {projectName}.",
+"Move project {folderName}",
+"Move folder {folderName}",
+"Change access for {teamName}",
+"{teamName} members",
+"Go back to {pageName}",
+"Go to {pageName}",
+"All {maxFreePages} free pages used.",
+"{pageName} more actions",
+"{plugin} is running in the background",
+"Inserting {plugin}",
+"Running {plugin}",
+"{plugin} stopped running.",
+"{standard} Contrast standard met.",
+"AA · Essential ({contrastValue} : 1)",
+"AAA · Highest ({contrastValue} : 1)",
+"Color contrast ratio: {ratio}:1. View details",
+"Edit {name} brush",
+"~{kb} KB total",
+"~{mb} MB",
+"~{mb} MB total",
+"{documentColorProfile} (same as file)",
+"{fps} fps",
+"Upload a shared font for anyone at {orgName} to use.",
+"Press {cmd} to select an option.",
+"Container ({parentName})",
+"When you open this link, your email {email} may be visible to other people who have access to the file",
+"Missing font: {fontName}",
+"On the Organization plan, fonts can be shared with all your teams. {upgradeLink}",
+"Upgrade to the Organization plan to share fonts with all your teams. {learnMoreLink}",
+"Select replacement for {fontName}",
+"Some fonts were uploaded for publishing. Install their OTF/TTF files to edit. {learnMoreLink}",
+"Editing is disabled until your request to join the {orgName} organization is approved",
+"{link} to start using variable fonts and enable future automatic updates",
+"{numNodes} layers deleted",
+"Ask Figma {query}",
+"Comment ({count} unread)",
+"Convert {format} to text",
+"Copy email {email}",
+"Copy phone {number}",
+"Expand panel for file named {fileName}",
+"Expand UI for file named {fileName}",
+"Plugins from {orgName}",
+"Invite other members to {orgName}",
+"Invite people to {orgName}",
+"Add {requesterName} to your organization?",
+"{requesterName} has been added to your organization",
+"You are already the admin of a Figma Organization plan. If you need another Organization plan, please {contactSales}.",
+"Have questions? {contactSales}",
+"Let people use Figma's AI features in all files in your organization. {learnMore}",
+"Let people use Figma's AI features in all files in your workspace. {learnMore}",
+"{workspaceName} will go back to using the default settings for AI features.",
+"Asset approvals settings for {workspaceName}",
+"{workspaceName} will go back to using the default settings for asset approvals behavior.",
+"Choose who’s allowed to export from your organization’s files. {learnMoreLink}",
+"{workspaceName} will go back to using the default settings for file exporting.",
+"This setting affects people's access to content, so you may want to {let_org_know} before making updates.",
+"When you allow members to access content from outside {orgName}, they can:",
+"Members can access content from outside {orgName}",
+"Guests are external users without an {domains} address.",
+"New guests can view and edit files in {orgName} until their access expires. This will not change access for existing guests.",
+"Guests without 2FA will be blocked from {orgName}.",
+"Leave {orgName} organization",
+"Members without 2FA will be blocked from logging in. {learnMoreLink}",
+"Email: {userEmail}",
+"User: {userName}",
+"Generated {timestamp}",
+"I understand that any API requests made using the API token {willBeDenied}.",
+"SCIM allows you to automatically update, provision, and deprovision users. For more information, view this {helpArticle}.",
+"SAML single sign-on allows you to manage your users with a third-party identity provider (IdP). For more information, view this {helpArticle}.",
+"Who can create teams in {organization}",
+"View {workspaceName} settings",
+"{workspaceName} will go back to using the default web publishing settings.",
+"You successfully left {orgName} Organization.",
+"No {resourceType} have been published to this organization yet.",
+"Search {resourceType}…",
+"No {resourceType} match your search query. Try your search again.",
+"No {resourceType} match your search or filter. Try adjusting your search or filter.",
+"Make this {resourceType} available for users by default",
+"Highlight this {resourceType} for users in your workspaces",
+"Recommend to all {orgName}",
+"Recommend {resourceName}",
+"This {resourceType} is already recommended to the organization",
+"No fonts match your search query. Try your search again or {uploadFontsLink}.",
+"Type: {fileType}",
+"wants to {requestType}",
+"Partial file saved {date}",
+"No file, project, team, or people results matching {searchQuery}",
+"No file, folder, team, or people results matching {searchQuery}",
+"By: {creator}",
+"In: {space}",
+"Active {relativeTimeString}",
+"In {teamName}",
+"All {orgName}",
+"Last active {relativeTimeString}",
+"To upgrade or add new seats, {cta}.",
+"Your {seatType} seat request is in.",
+"Tooltip image showing the product {productKey}",
+"We’ll send your request to an admin at {orgOrTeamName}.",
+"Cannot update email - \"{tokenId}\" is already taken",
+"{workspaceName} will go back to using the default settings for public sharing.",
+"If your new email doesn’t end in @{orgDomain}, you may lose access to some or all of your organization’s files.",
+"Two-factor authentication (2FA) required for {orgName}",
+"{enableLibrariesLink} for all files in your drafts",
+"Learn more about captioning {learnMoreLink}",
+"Local fonts are enabled. You have {localFontCount} fonts available in Figma.",
+"For more information about how we treat your data, please see our {privacyPolicyLink}.",
+"To confirm, please type \"{confirmationText}\" below.",
+"{orgHandle} currently has no restricted commenters.",
+"Can't load collection. Restore a previous version in its originating file, or {link}.",
+"Can't load collection. Restore a previous version of this file, or {link}.",
+"No fonts found for \"{fontFamily}\"",
+"Collection name changed to {collectionName}",
+"Modes changed to {modeNames}",
+"Color Variable {variableName}",
+"Collections can't have more than {variableLimit} variables",
+"Some layers need updates before they can use {modeName}.",
+"Library assets may need to be republished for {modeName} mode to show.",
+"Search results for ’{query}’",
+"{adminTeamName} Admin Console",
+"Upgrade {teamName}",
+"Enter full screen ({shortcut})",
+"Exit full screen ({shortcut})",
+"Actual size ({zoomAmount}%)",
+"Show device at {zoomAmount}%",
+"Press {keycommand} to show the Figma UI again",
+"Are you sure you want to delete Session {sessionNumber}?",
+"Recording Session {sessionNumber}",
+"Session {sessionNumber}",
+"To collaborate with {fileOpenerName} and other teammates in this draft, you’ll need an upgraded seat.",
+"{failedFileCount} files could not be added",
+"{failedFileCount} file could not be added",
+"Can't paste {typeName} from FigJam to Buzz files",
+"Can't paste {typeName} from FigJam to Design files",
+"Can't paste {typeName} from FigJam to Sites files",
+"Copied email {email}",
+"Copied link to {hyperlink}",
+"Copied link to {format}",
+"Copied phone {number}",
+"Copied {colorType}",
+"Copy as {fileType} failed | Try again",
+"There is an error syncing the code on {codeFileName}.",
+"Moved to {folderName}",
+"Forced layout of {count} text elements",
+"Height set to Fixed for {nodes}",
+"Height set to Hug for {nodes}",
+"Horizontal constraint set to Center for {nodes}",
+"Image file {filename} import failed",
+"To use Figma for VS Code, you’ll need access to {devMode}.",
+"{button} to show full title",
+"Layers, selected layer \"{layer}\"",
+"Latest: {activityTime}",
+"{count} layers selected",
+"Collapse {pageName}",
+"Expand {pageName}",
+"Thumbnail of \"{imageDescription}\"",
+"{suggestion}, AI agent",
+"Design from {makeName} has been edited",
+"Extracted from {makeName}",
+"Search the {packageName} Design System",
+"More templates from {planName}",
+"Recommended templates from {planName}",
+"Failed to upload file \"{name}\"",
+"This will delete \"{folderName}\" and all files and folders within it.",
+"Delete \"{folderName}\"? This can't be undone.",
+"Folder \"{name}\"",
+"Options for {accountName}",
+"Publishing failed: {scriptPath} script not found. Ask the agent to fix this for you then try again.",
+"Earlier changes {index}",
+"Recent turns, {range}",
+"{name}’s organization",
+"{name}’s project",
+"Couldn’t find templates matching \"{searchTerm}\"",
+"Close {tabName}",
+"Rename spec {specName}",
+"Shell exited with status {exitCode}.",
+"Rename {tabName}",
+"Back to {fileName}",
+"See {numberOfEditableProjects} more projects",
+"See {numberOfEditableProjects} more folders",
+"{numFiles} files found.",
+"You joined {hostName}'s collaboration",
+"Remove {exampleName} from selected examples",
+"Select {exampleName} as an example",
+"Remove {num_cols} columns",
+"Remove {num_rows} rows",
+"{count} slots selected",
+"Guide {num}",
+"Remove horizontal guide {num}",
+"{nodeName} Ruler Guides",
+"Remove vertical guide {num}",
+"Copy font size: {value}",
+"Copy line height: {value}",
+"Settings (for {languageOrPlugin})",
+"Copy link: {link}",
+"Get instructions for your AI coding agent {hereWithHyperlink}.",
+"Sent {timeFromNow}",
+"Generate code with context from this file via the remote MCP server. {learnMoreLink}",
+"Measurements for {layerName}",
+"Ask an admin of {teamName} about upgrading.",
+"{host} refused to connect",
+"Unpublishing {domain} will take what you've made offline. Your domain name will still be available if you choose to republish.",
+"{modifier}click a stroke to sample properties",
+"{zoomPercentage}%, zoom and view options",
+"{plugin} ran into an issue",
+"Your {orgName} admins have started updates that may take a while to complete. Check back soon, or work from another account in the meantime.",
+"Your {orgName} admins have started updates that may take a while to complete. Check back soon.",
+"Looking for a different account? {addAnotherLink}",
+"Want to work from another account in the meantime? {addAnotherLink}",
+"Another process is using port {port}",
+"Port {port} is in use by this folder",
+"Another tab is using port {port}",
+"Hide output for {stepLabel}",
+"Show output for {stepLabel}",
+"Switch branch, current branch: {branch}",
+"Previewing branch: {branch}",
+"{host} isn’t in your known hosts. Add it with:",
+"{host} isn’t in your known hosts and we couldn’t add it for you. Run this yourself:",
+"No SSH key found. You’ll need to generate one and add it to {host}.",
+"Could not generate component properties: {reason}",
+"Remote Figcode stopped unexpectedly (exit code {exitCode}).",
+"Previewing: {message}",
+"A branch named {name} already exists",
+"Branch name contains invalid characters or sequences ({chars})",
+"Start from latest {branch} on remote",
+"Connection to {workspaceName} failed",
+"Reconnecting to {workspaceName}",
+"Working on {workspaceName}",
+"You’re making changes on {branch}. We recommend using a new branch instead.",
+"You need the Figma desktop app to open “{fileName}”",
+"Opened “{fileName}” in Figma desktop app",
+"Opening “{fileName}” in Figma desktop app...",
+"Last viewed {time}",
+"Viewed {time}",
+"Offloaded tab: {memory}GB freed up",
+"Memory usage: {memory}GB",
+"About {appName}",
+"Update {appName}",
+"Blocked Navigation to ''{hostname}''",
+"{appName} wants to share the contents of your screen and open windows. Do you want to share your screen?",
+"\"{filePath}\" is not a valid path. No files were saved.",
+"Please move the {appName} app into the Applications folder and try again.{lineBreak}If the app is already in the Applications folder, drag it into some other folder and then back into Applications.",
+"Hide {appName}",
+"Quit {appName}",
+"{pluginName} (Community)",
+"A new version of {appName} is ready to be installed.",
+"{appName} Reset Failed",
+"Reset {appName} and Restart?",
+"Approve requests faster by {settingsLink}",
+"No requests to show. {resetFiltersLink}",
+"Let Figma use your organization’s content to train AI models. Figma takes steps to de-identify data and protect your privacy. {learnMoreLink}",
+"Let Figma use your team’s content to train AI models. Figma takes steps to de-identify data and protect your privacy. {learnMoreLink}",
+"If you’d like to keep monthly seats, you can save 20% by {adding_seats_to_annual_plan_link}",
+"Allow administrators to create and use REST API plan access tokens. {learnMoreLink}",
+"Allow limited viewing of content for the purpose of product support. {learnMoreLink}",
+"{manageSupportVisibilityLink} Support visibility",
+"Stay on top of your team’s AI activity by tracking credit usage and seeing who’s run out. {learnMoreLink}",
+"Group members may not have access to all credits. {learnMoreLink}",
+"Libraries, shared fonts, and other resources that this project used to be connected to may be unavailable after the transfer. {learnMore}",
+"Libraries, shared fonts, and other resources that this folder used to be connected to may be unavailable after the transfer. {learnMore}",
+"Libraries, shared fonts, and other resources that this team used to be connected to may be unavailable after this transfer. {learnMore}",
+"This team has guest accounts. If you want them to transfer over, temporarily change your admin setting to allow guests before accepting. {learnMore}",
+"Once the receiving team shares their {figmaTeamLink} with you, add it here.",
+"Once the receiving organization shares their {figmaOrgLink} with you, add it here.",
+"If you don't see the account you want to use, you can {addAnotherLink}.",
+"If you're having trouble loading the Captcha puzzle, please refer to our {helpCenterLink}.",
+"Wrong address? {logOutLink} to sign in with a different email.",
+"Wrong address? {goBackLink}",
+"Didn't receive the code? {cta}",
+"No email in your inbox or spam folder? {resendEmailLink}.",
+"Your work now lives in Figma for Government. Edits made here won’t appear there. Open {figmaForGovernmentLink} to keep working.",
+"Projects are no longer supported outside of teams. Please move this file to a team or your drafts to continue editing. {learnMoreLink}",
+"Folders are no longer supported outside of teams. Please move this file to a team or your drafts to continue editing. {learnMoreLink}",
+"You’re currently unable to manage paid credits. For more information, contact {contactSupportLink}.",
+"No budget set. {learnMoreLink}",
+"You can also {disableLink} (and enable it again any time).",
+"When you disable, members of {planName} will immediately lose access to pay as you go AI credits.",
+"If you’d like to save by pre-purchasing, go back to {addMonthlyCredits}",
+"You’re currently unable to add paid credits. For more information, contact {contactSupportLink}.",
+"If you’d like to save by pre-purchasing, {addMonthlyCredits}",
+"You’ll be invoiced for credits {planName} uses toward this budget on your next invoice. Nothing’s due today.",
+"New price: {price}/mo",
+"New price: {price}/yr",
+"Set aside monthly credits for this billing group. Members will have access to this amount each month. {learnMoreLink}",
+"You can adjust or remove this billing group’s credits. {learnMoreLink}",
+"Set aside some of your plan’s monthly credits for this billing group. Members will have access to this amount each month. {learnMoreLink}",
+"Click on the link we sent to {emailAddress} within the next 5 minutes to log in.",
+"Click on the link we sent to {emailAddress} within the next 5 minutes to finish your account setup.",
+"If an account exists for {email}, you will get an email with instructions on resetting your password. If it doesn't arrive, be sure to check your spam folder.",
+"Log in or create an account to leave comments on {fileName}.",
+"Select any organization to authenticate and access all of {email}’s organizations.",
+"Try again on the {appDescriptor} app",
+"Your organization currently requires 2FA for all external guests. If you turn off 2FA, you won’t be able to access files in {orgName} organization unless you reactivate it.",
+"Your phone number is set to {phoneNumber}. Authentication codes will be texted to this number for logging in.",
+"You can only log in to {orgName} accounts on this network.",
+"You can only log in to accounts from {orgNames} on this network.",
+"A configuration error prevented sign-in with Figma. Please contact your Organization administrator. Error: {ERROR}",
+"Entity ID does not match. {ERROR}",
+"{TEAM_NAME} at editor limit",
+"{TEAM_NAME} at paid seat limit",
+"It looks like {EMAIL} hasn't been added to Figma yet. Please contact your administrator to kick off the account creation process.",
+"SMS sent to {phoneNumber}. Please allow up to a minute for the SMS to arrive, then enter the authentication code below.",
+"Code was sent to number ending in {phoneNumber}",
+"SMS sent to number ending in {phoneNumber}",
+"A code has been sent to your email {email}.",
+"Click on the link we sent to {emailAddress} to finish your account setup.",
+"Couldn’t rename {count} layers",
+"This will update your seat in {planName}—you’ll get full access to FigJam and Figma Slides.",
+"This will update your seat in {planName}—you’ll get full access to Figma Design, Dev Mode, FigJam, and Figma Slides.",
+"A Full seat in {planName} includes higher AI credit limits and full access to Figma Design, Dev Mode, FigJam, and Figma Slides.",
+"A Full seat in {planName} includes higher MCP tool call limits and full access to Figma Design, Dev Mode, FigJam, and Figma Slides.",
+"You’ve been invited to edit this Figma Design file. This will update your seat in {planName}—you’ll get full access to Figma Design, Dev Mode, FigJam, and Figma Slides.",
+"A Collab seat in {planName} includes higher AI credit limits and full access to FigJam and Figma Slides.",
+"You’ve been invited to edit this FigJam file. This will update your seat in {planName}—you’ll get full access to FigJam and Figma Slides.",
+"This will update your seat in {planName}—you’ll get full access to Figma Make, Figma Design, Figma Sites, Dev Mode, FigJam, and Figma Slides",
+"A Full seat in {planName} includes higher AI credit limits and full access to Figma Make, Figma Design, Figma Sites, Dev Mode, FigJam, and Figma Slides",
+  "Set an expiration for a public link to the {name} file",
+  "Updated the expiration for a public link to the {name} file",
+  "Removed the expiration for a public link to the {name} file",
+  "Moved the {name} file to their drafts folder",
+  "Removed prototype link access for {name}",
+  "Disabled separate prototype link access for {name}",
+  "Restored {name} from the trash",
+  "Saved {name} as a .fig file",
+  "Set a password on prototype link access for {name}",
+  "Changed {name} to allow viewers to copy, share, and export the file",
+  "Changed {name} to disallow viewers from copying, sharing, and exporting the file",
+  "Allowed exporting for all viewers for {orgName}",
+  "Restricted exporting for all viewers for {orgName}",
+  "Retricted exporting for guest viewers for {orgName}",
+  "Deleted the {folderName} project",
+  "Deleted the {folderName} folder",
+  "Created a duplicate folder {folderName}",
+  "Exported the {folderName} project out of the organization",
+  "Exported the {folderName} folder out of the organization",
+  "Imported the {folderName} project into the organization",
+  "Imported the {folderName} folder into the organization",
+  "Disabled inherited permissions from its parent for the {folderName} folder",
+  "Restored inherited permissions for the {folderName} folder",
+  "Copyright © {year} Figma, Inc.",
+  "Figma Make may load project configuration from this folder that can run commands.\n\n{directory}",
+  "Make will open this repository after cloning. Project configuration and Git metadata in this repository can run commands.\n\n{directory}",
+  "You have multiple installations of the {appName} Desktop App. Try again after removing the other Desktop App installation at:",
+  "Please enable Camera & Microphone for {appName} in System Preferences → Security & Privacy → Privacy.",
+  "Please enable Camera for {appName} in System Preferences → Security & Privacy → Privacy.",
+  "Please enable Microphone for {appName} in System Preferences → Security & Privacy → Privacy.",
+  "{appName} was unable to reset app data and restart. Please contact support for assistance.",
+  "{appName} needs to be restarted to apply changes.",
+  "\"{fileName}\" already exists. Replacing it will overwrite its existing contents.",
+  "\"{filePath}\" could not be saved. Remaining files will not be saved.",
+  "{appName} was not able to install the update:",
+  "Microphone access required to talk in Figma Audio. Please enable microphone for {appName} in System Preferences → Security & Privacy → Privacy → Microphone.",
+  "Follow {name}",
+  "For higher AI credit limits in {planName}, request an upgrade to a Full seat. ",
+  "For higher MCP tool call limits in {planName}, request an upgrade to a Full seat. ",
+  "{teamName} is locked and cannot add more files."
+];
+const reviewedSingleParameterRules = reviewedSingleParameterSources.flatMap(source => {
+  const tokens = [...source.matchAll(/\{(\w+)\}/g)];
+  const target = map[source] ?? map[`${source} `];
+  if (tokens.length !== 1 || typeof target !== 'string') return [];
+  const token = tokens[0][0], offset = tokens[0].index;
+  if (target.split(token).length !== 2 || /[{}]/.test(target.replace(token, ''))) return [];
+  const prefix = source.slice(0, offset).replace(/\s+/g, ' '), suffix = source.slice(offset + token.length).replace(/\s+/g, ' ');
+  return [{ prefix, suffix, token, target }];
+});
+function localizeReviewedSingleParameterTemplate(value){
+  for(const rule of reviewedSingleParameterRules){
+    if(!value.startsWith(rule.prefix)||!value.endsWith(rule.suffix))continue;
+    const parameter=value.slice(rule.prefix.length,rule.suffix.length?-rule.suffix.length:undefined);
+    if(!parameter.trim())continue;
+    return rule.target.replace(rule.token,()=>parameter);
+  }
+  return undefined;
+}
+function localizeSimpleTemplate(value){
+  for(const rule of simpleTemplateRules){
+    const match=value.match(rule.regex);
+    if(!match)continue;
+    const values={};
+    rule.names.forEach((name,index)=>{if(values[name]===undefined)values[name]=match[index+1];});
+    const translated=rule.target.replace(/\{([A-Za-z_]\w*)\}/g,(_,name)=>values[name]??`{${name}}`);
+    if(translated!==value)return translated;
+  }
+  return undefined;
+}
+function isViewedTimeLabelContext(element){
+  for(let current=element,depth=0;current&&depth<4;current=current.parentElement,depth+=1){
+    const text=(current.textContent||'').replace(/\s+/g,' ').trim();
+    if(/(?:^|\s)Viewed\s+(?:\d+\s+(?:seconds?|minutes?|hours?|days?|weeks?|months?|years?)\s+ago|\d+\s*(?:秒|分钟|小时|天|周|个月|年前))/i.test(text))return true;
+  }
+  return false;
+}
+function isEditedTimeLabelContext(element){
+  for(let current=element,depth=0;current&&depth<4;current=current.parentElement,depth+=1){
+    const text=(current.textContent||'').replace(/\s+/g,' ').trim();
+    if(/(?:^|\s)(?:Edited\s+(?:\d+\s+(?:seconds?|minutes?|hours?|days?|weeks?|months?|years?)\s+ago)|编辑\s+\d+\s*(?:秒|分钟|小时|天|周|个月|年前))/i.test(text))return true;
+  }
+  return false;
+}
+const requiredFieldInfoFragments = [
+  ['All fields marked with ', '标有 '],
+  [' fields marked with ', ' 标有 '],
+  ['fields marked with ', '标有 '],
+  [' are required', ' 的字段均为必填项'],
+  ['All', '所有']
+];
+function isRequiredFieldInfoContext(element){
+  for(let current=element,depth=0;current&&depth<6;current=current.parentElement,depth+=1){
+    const text=(current.textContent||'').replace(/\s+/g,' ').trim();
+    if(/fields marked with|are required|标有 .*字段均为必填项|字段均为必填项/i.test(text))return true;
+  }
+  return false;
+}
+const riffUsageFragments = [
+  [' creators have riffed on this', ' 位创建者对其进行了改编'],
+  ['creators have riffed on this', '位创建者对其进行了改编'],
+  [' creator has riffed on this', ' 位创建者对其进行了改编']
+];
+function isRiffUsageContext(element){
+  for(let current=element,depth=0;current&&depth<6;current=current.parentElement,depth+=1){
+    const text=(current.textContent||'').replace(/\s+/g,' ').trim();
+    if(/creators? have? riffed on this|对其进行了改编/i.test(text))return true;
+  }
+  return false;
+}
+function translateContextFragments(node){
+  if(!node||node.nodeType!==Node.TEXT_NODE)return false;
+  const element=node.parentElement;
+  const fragments=isRequiredFieldInfoContext(element)?requiredFieldInfoFragments:isRiffUsageContext(element)?riffUsageFragments:undefined;
+  if(!fragments)return false;
+  let translated=node.nodeValue;
+  for(const [source,target] of fragments){
+    if(translated.includes(source))translated=translated.split(source).join(target);
+  }
+  if(translated===node.nodeValue)return false;
+  applyTranslatedText(node,node.nodeValue,translated);
+  return true;
+}
+function localizeNewDynamicTemplate(value){
+  let match;
+  if(match=value.match(/^All fields marked with\s+\*\s+are required$/i))return '标有 * 的字段均为必填项';
+  if(match=value.match(/^(\d[\d,]*)\s+creators?\s+have\s+riffed on this$/i))return `${match[1]} 位创建者对其进行了改编`;
+  if(match=value.match(/^(\d[\d,]*)\s+creator has riffed on this$/i))return `${match[1]} 位创建者对其进行了改编`;
+  if(match=value.match(/^Viewed\s+(.+)$/i)){
+    const time=localizeRelativeTime(match[1])??localizeClockTime(match[1])??(localizeShortDate(match[1])!==match[1]?localizeShortDate(match[1]):undefined);
+    if(time)return `已于 ${time} 查看`;
+  }
+  if(match=value.match(/^Pinned split tab group:\s*(.+),\s*([^,]+)$/i))return `已固定分屏标签组：${match[1]}、${match[2]}`;
+  if(match=value.match(/^(.+?) Desktop App version (.+)$/i))return `${match[1]} 桌面应用版本 ${match[2]}`;
+  if(match=value.match(/^This version of (.+?) is not intended for use on (Apple Silicon|Windows on Arm)\. Please download \1 again from the Figma Downloads page to ensure that the correct version is installed\.$/i))return `此版本的 ${match[1]} 不适用于 ${match[2]}。请从 Figma 下载页面重新下载 ${match[1]}，以确保安装了正确的版本。`;
+  if(/^This is likely happening because your corporate network is using a proxy\.\s+This can be resolved by adding non-Figma origins used by your proxy to your AllowedOriginHosts setting\. Click the button below to visit our Help Center for details\.$/i.test(value))return '这可能是因为您的企业网络正在使用代理。您可以将代理使用的非 Figma 源添加到 AllowedOriginHosts 设置中来解决此问题。点击下方按钮访问帮助中心了解详情。';
+  if(match=value.match(/^Figma Make may load project configuration from this folder that can run commands\.\s+(.+)$/i))return `Figma Make 可能会从此文件夹加载可运行命令的项目配置。\n\n${match[1]}`;
+  if(match=value.match(/^Make will open this repository after cloning\. Project configuration and Git metadata in this repository can run commands\.\s+(.+)$/i))return `克隆后，Make 将打开此代码库。此代码库中的项目配置和 Git 元数据可能会运行命令。\n\n${match[1]}`;
+  if(match=value.match(/^You are already using the latest version of (.+?)\.\s+Missing a new feature\? Try reloading your tabs and check again\. If you experience any other issues, please contact support\.$/i))return `您已在使用最新版本的 ${match[1]}。缺少新功能？请重新加载标签页并重试。如果遇到其他问题，请联系支持团队。`;
+  if(match=value.match(/^(.+?) app data will reset and the app will restart\. You will need to log back into (.+?) after this is done\.$/i))return `${match[1]} 应用数据将被重置，应用也会重启。完成后，您需要重新登录 ${match[2]}。`;
+  if((match=value.match(/^Error navigating to ''(.+?)'':\s*(.+)$/i))||(match=value.match(/^Error navigating to '(.+?)':\s*(.+)$/i)))return `导航至“${match[1]}”时出错：${match[2]}`;
+  if(match=value.match(/^This will update your seat in (.+?)—you’ll get full access to Dev Mode, FigJam, and Figma Slides\.$/i))return `这将更新您在 ${match[1]} 中的席位—您将获得 Dev Mode、FigJam 和 Figma Slides 的完整访问权限。`;
+  if(match=value.match(/^This will update your seat in (.+?)—you’ll get full access to Figma Design, Figma Sites, Dev Mode, FigJam, and Figma Slides\.$/i))return `这将更新您在 ${match[1]} 中的席位—您将获得 Figma Design、Figma Sites、Dev Mode、FigJam 和 Figma Slides 的完整访问权限。`;
+  if(match=value.match(/^For higher AI credit limits in (.+?), request an upgrade to a Full seat\.$/i))return `如需在 ${match[1]} 中获得更高的 AI 额度上限，请申请升级为完整席位。`;
+  if(match=value.match(/^For higher MCP tool call limits in (.+?), request an upgrade to a Full seat\.$/i))return `如需在 ${match[1]} 中获得更高的 MCP 工具调用上限，请申请升级为完整席位。`;
+  return undefined;
+}
+
+function lookup(value,node,attributeName){
   if(typeof value!=='string')return undefined;
   const leading=value.match(/^\s*/)?.[0]??'',trailing=value.match(/\s*$/)?.[0]??'',trimmed=value.trim(),normalized=trimmed.replace(/[\u200B-\u200F\u2060\uFEFF]/g,'').replace(/\s+/g,' ');
   const element=node?.nodeType===Node.ELEMENT_NODE?node:node?.parentElement;
+  if(normalized.toLocaleLowerCase('en-US')==='viewed'&&isViewedTimeLabelContext(element))return leading+'查看于'+trailing;
+  if(normalized.toLocaleLowerCase('en-US')==='edited'&&isEditedTimeLabelContext(element))return leading+'编辑于'+trailing;
   const languageOption=localizeLanguageOption(element,normalized);
   if(languageOption)return leading+languageOption+trailing;
   if(languageOptionTranslations.has(normalized.toLocaleLowerCase('en-US')))return undefined;
+  const autoLayoutSettingsOption=localizeAutoLayoutSettingsOption(element,normalized);
+  if(autoLayoutSettingsOption)return leading+autoLayoutSettingsOption+trailing;
   if(!/[A-Za-z0-9]/.test(normalized))return undefined;
   const blendModeNormal=isBlendModeNormalContext(element,normalized);
   const iphoneDeviceColor=isIPhoneDeviceColorContext(element,normalized);
@@ -390,7 +1458,7 @@ function lookup(value,node){
   const componentNameValue=isComponentNameInputContext(element);
   const ambiguousThemeName=normalized.toLocaleLowerCase('en-US')==='dark'||normalized.toLocaleLowerCase('en-US')==='light';
   const relativeTime=/^\d+\s+(?:seconds?|minutes?|hours?|days?|weeks?|months?|years?)\s+ago$/i.test(normalized)||/^\d+\s*[smhdw]\s+ago$/i.test(normalized);
-  if(isEditableTextContext(element))return undefined;
+  if(isEditableTextContext(element)&&attributeName!=='placeholder')return undefined;
   if(componentNameValue)return undefined;
   const isComponentDetailText=componentDetailActionTranslations.has(normalized.toLocaleLowerCase('en-US'))||/^includes\s+\d+\s+variants?$/i.test(normalized);
   if(isComponentPropertyValueContext(element)&&!layoutGuideCountAuto&&!directTooltip&&!isComponentDetailText&&normalized.toLocaleLowerCase('en-US')!=='mixed')return undefined;
@@ -401,7 +1469,7 @@ function lookup(value,node){
   const exportQuality=isExportQualityContext(element,normalized);
   if(!blendModeNormal&&!shaderQuality&&!exportQuality&&!iphoneDeviceColor&&!themeOption&&!directTooltip&&!textFormattingMenu&&isFontWeightContext(element,normalized))return undefined;
   if(isColorSpaceContext(element,normalized))return undefined;
-  let translated=directTooltip??textFormattingMenu??map[trimmed]??map[normalized]??ciMap.get(trimmed.toLocaleLowerCase('en-US'))??ciMap.get(normalized.toLocaleLowerCase('en-US'));
+  let translated=directTooltip??textFormattingMenu??map[trimmed]??map[normalized]??ciMap.get(trimmed.toLocaleLowerCase('en-US'))??ciMap.get(normalized.toLocaleLowerCase('en-US'))??whitespaceMap.get(normalized.toLocaleLowerCase('en-US'));
   if(!translated&&trashDialog){
     if(/^You're about to move the file$/i.test(normalized))translated='你即将把文件';
     else if(/^to trash\.$/i.test(normalized))translated='移到回收站。';
@@ -417,11 +1485,34 @@ function lookup(value,node){
   if(normalized.toLocaleLowerCase('en-US')==='state'&&isPaymentDetailsContext(element))translated='州';
   if(translated===trimmed||translated===normalized)translated=undefined;
   if(element?.closest?.(shaderPanelSelector)&&shaderOnlyMap[normalized])translated=shaderOnlyMap[normalized];
+  if(!translated)translated=localizeNewDynamicTemplate(normalized);
+  if(!translated)translated=localizeReviewedSingleParameterTemplate(normalized);
   if(!translated){
     let match;
     const localizedClockTime=localizeClockTime(normalized);
     const localizedDate=localizeShortDate(normalized);
-    if(localizedClockTime)translated=localizedClockTime;
+    if(match=normalized.match(/^(Disabled|Enabled) AI (content training|features) for (.+)$/))translated=`已为 ${match[3]} ${match[1]==='Disabled'?'禁用':'启用'} AI ${match[2]==='content training'?'内容训练':'功能'}`;
+    else if(match=normalized.match(/^([^\s@]+@[^\s@]+) purchased ([\d,]+) AI credits\/mo$/))translated=`${match[1]} 购买了每月 ${match[2]} AI 点数`;
+    else if(match=normalized.match(/^([^\s@]+@[^\s@]+) disabled pay as you go AI credits$/))translated=`${match[1]} 禁用了按量付费 AI 点数`;
+    else if(match=normalized.match(/^Rejected ([^\s@]+@[^\s@]+)’s request for additional AI credits$/))translated=`已拒绝 ${match[1]} 申请更多 AI 点数的请求`;
+    else if(match=normalized.match(/^(Disabled|Enabled) community resources in template picker for (.+) \(Buzz only\)$/))translated=`已为 ${match[2]} ${match[1]==='Disabled'?'禁用':'启用'}模板选择器中的社区资源（仅限 Buzz）`;
+    else if(match=normalized.match(/^Unsplash in Buzz setting was (disabled|enabled) for (.+)$/))translated=`已为 ${match[2]} ${match[1]==='disabled'?'禁用':'启用'} Buzz 中的 Unsplash 设置`;
+    else if(match=normalized.match(/^(Disabled|Enabled) (cursor chat|public links) for the (.+) (organization|workspace)$/))translated=`已为 ${match[3]} ${match[4]==='organization'?'组织':'工作区'}${match[1]==='Disabled'?'禁用':'启用'}${match[2]==='cursor chat'?'光标聊天':'公开链接'}`;
+    else if(match=normalized.match(/^Allowed public links with passwords for the (.+) (organization|workspace)$/))translated=`已允许 ${match[1]} ${match[2]==='organization'?'组织':'工作区'}使用带密码的公开链接`;
+    else if(match=normalized.match(/^(Disabled|Enabled) (web publishing|Supabase integration) for (.+)$/))translated=`已为 ${match[3]} ${match[1]==='Disabled'?'禁用':'启用'}${match[2]==='web publishing'?'网页发布':' Supabase 集成'}`;
+    else if(match=normalized.match(/^Connected Supabase project to the (.+) file$/))translated=`已将 Supabase 项目连接到 ${match[1]} 文件`;
+    else if(match=normalized.match(/^Disconnected Supabase project from the (.+) file$/))translated=`已断开 Supabase 项目与 ${match[1]} 文件的连接`;
+    else if(match=normalized.match(/^(Created|Deleted|Updated) generative plugin (.+)$/))translated=`已${{Created:'创建',Deleted:'删除',Updated:'更新'}[match[1]]}生成式插件 ${match[2]}`;
+    else if(match=normalized.match(/^Edited billing group credits from ([\d,]+) to ([\d,]+) for (.+)$/))translated=`已将 ${match[3]} 的账单组点数从 ${match[1]} 修改为 ${match[2]}`;
+    else if(match=normalized.match(/^Removed billing group credits from (.+)$/))translated=`已移除 ${match[1]} 的账单组点数`;
+    else if(match=normalized.match(/^Set aside ([\d,]+) billing group credits for (.+)$/))translated=`已为 ${match[2]} 预留 ${match[1]} 账单组点数`;
+    else if(match=normalized.match(/^Created a new billing group called (.+)$/))translated=`已创建名为 ${match[1]} 的新账单组`;
+    else if(match=normalized.match(/^(Deleted|Selected) the (.+) billing group$/))translated=`已${match[1]==='Deleted'?'删除':'选择'} ${match[2]} 账单组`;
+    else if(match=normalized.match(/^(Deleted|Permanently deleted) CMS resource (.+)$/))translated=`已${match[1]==='Deleted'?'删除':'永久删除'} CMS 资源 ${match[2]}`;
+    else if(match=normalized.match(/^Deleted (file|plugin|widget) (.+) from Community$/))translated=`已从社区删除${{file:'文件',plugin:'插件',widget:'小部件'}[match[1]]} ${match[2]}`;
+    else if(match=normalized.match(/^Published (file|plugin|widget) (.+) to Community$/))translated=`已将${{file:'文件',plugin:'插件',widget:'小部件'}[match[1]]} ${match[2]} 发布到社区`;
+    else if(match=normalized.match(/^Updated (file) (.+) in Community$/)||normalized.match(/^Updated (plugin|widget) (.+) to Community$/))translated=`已更新社区中的${{file:'文件',plugin:'插件',widget:'小部件'}[match[1]]} ${match[2]}`;
+    else if(localizedClockTime)translated=localizedClockTime;
     else if(localizedDate!==normalized)translated=localizedDate;
     else if(match=normalized.match(/^More actions for (.+)$/i))translated=`更多操作：${lookup(match[1],node)??match[1]}`;
     else if(match=normalized.match(/^Updates from\s+(.+)$/i))translated=`来自 ${match[1]} 的更新`;
@@ -485,7 +1576,16 @@ function lookup(value,node){
     else if(match=normalized.match(/^Auto\s*\((.+)\)$/i))translated=`自动（${match[1]}）`;
     else if(match=normalized.match(/^Turn (on|off) auto-keyframe(?:\s+(.+))?$/i))translated=`${match[1].toLowerCase()==='on'?'开启':'关闭'}自动关键帧${match[2]?` ${match[2]}`:''}`;
     else if(match=normalized.match(/^([\d,.]+)\s+credits?\s+left$/i))translated=`剩余 ${match[1]} 点额度`;
-    else if(match=normalized.match(/^Edited\s+(.+)$/i))translated=`编辑于 ${localizeRelativeTime(match[1])??match[1]}`;
+    else if(match=normalized.match(/^Last viewed\s+(.+)$/)){
+      const time=localizeRelativeTime(match[1])??localizeClockTime(match[1])??({today:'今天',yesterday:'昨天','just now':'刚刚'}[match[1].toLowerCase()])??(localizeShortDate(match[1])!==match[1]?localizeShortDate(match[1]):undefined);
+      if(time)translated=`上次查看于 ${time}`;
+    }
+    else if(match=normalized.match(/^For help, visit (https?:\/\/\S+) or contact ([^\s@]+@[^\s@]+)\.$/))translated=`如需帮助，请访问 ${match[1]} 或联系 ${match[2]}。`;
+    else if(match=normalized.match(/^Split tab group: (.+, .+)$/))translated=`分屏标签组：${match[1]}`;
+    else if(match=normalized.match(/^Edited\s+(.+)$/i)){
+      const time=localizeRelativeTime(match[1])??localizeClockTime(match[1])??(localizeShortDate(match[1])!==match[1]?localizeShortDate(match[1]):undefined);
+      if(time)translated=`编辑于 ${time}`;
+    }
     else if(match=normalized.match(/^Viewed\s+(\d+)\s+(seconds?|minutes?|hours?|days?|weeks?|months?|years?)\s+ago$/i)){
       const unit={second:'秒',minute:'分钟',hour:'小时',day:'天',week:'周',month:'个月',year:'年'}[match[2].toLowerCase().replace(/s$/,'')];
       translated=`${match[1]}${unit}前查看`;
@@ -600,7 +1700,7 @@ function translateAttributes(element){
   for(const name of attrs){
     if(!shouldTranslateAttribute(element,name))continue;
     const value=element.getAttribute(name);
-    const translated=value&&lookup(value,element);
+    const translated=value&&lookup(value,element,name);
     if(translated&&translated!==value)element.setAttribute(name,translated);
   }
 }
@@ -665,6 +1765,7 @@ function translateMixedTextNode(node){
   return true;
 }
 function translateTextNode(node){
+  if(translateContextFragments(node))return;
   if(translateConnectedTeamFragments(node))return;
   if(translateMixedTextNode(node))return;
   const value=node.nodeValue;
