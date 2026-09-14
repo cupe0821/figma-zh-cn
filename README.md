@@ -110,7 +110,8 @@ npm run uninstall:local
 2. 更新 `package.json` 版本和 `manifests/source-lock.json`。
 3. 本地及 GitHub Actions 校验通过。
 4. 创建标签，例如 `v126.8.16-cn.1`。
-5. `release.yml` 在对应平台 runner 上打包本地维护工具、发布 SHA-256，并在 Release 页面生成从上一版本到当前版本的更新说明。
+5. `release.yml` 先创建草稿 Release，再由四个平台 runner 打包本地维护工具并直接上传为该 Release 的资产（不占用 Actions artifact 存储）。
+6. 全部平台完成后汇总 SHA-256，追加 `SHA256SUMS` 并正式发布，Release 页面同时给出从上一版本到当前版本的更新说明。
 
 ## 许可与免责声明
 

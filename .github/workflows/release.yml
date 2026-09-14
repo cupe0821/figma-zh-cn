@@ -1,5 +1,7 @@
 name: Build release packages
 
+# 构建产物直接上传到草稿 Release，不经由 Actions artifact 存储，
+# 以免发版时受 artifact 配额限制。
 on:
   workflow_dispatch:
     inputs:
@@ -14,19 +16,54 @@ permissions:
   contents: write
 
 jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.value }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Resolve tag
+        id: tag
+        shell: bash
+        run: echo "value=${{ inputs.tag || github.ref_name }}" >> "$GITHUB_OUTPUT"
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="${{ steps.tag.outputs.value }}"
+          if gh release view "$tag" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+            echo "发布 $tag 已存在，直接复用。"
+            exit 0
+          fi
+          VERSION_NOTES="$(node -p "require('./manifests/' + require('./package.json').version.replace(/-cn\\..*$/, '') + '.json').notes")"
+          RELEASE_NOTES_PREFIX="$(printf '## 更新说明\n\n%s\n\n以下提交与 PR 由 GitHub 自动汇总。\n\n> 非官方 Figma 简体中文本地维护包。只包含翻译与补丁工具，不包含 Figma 应用。平台验证状态以当前版本清单为准。' "$VERSION_NOTES")"
+          gh release create "$tag" \
+            --repo "${{ github.repository }}" \
+            --title "$tag" \
+            --notes "${RELEASE_NOTES_PREFIX}" \
+            --generate-notes \
+            --draft
+
   build:
+    needs: prepare
     strategy:
       fail-fast: false
       matrix:
         include:
           - os: macos-15-intel
             target: macos-x64
+            ext: tar.gz
           - os: macos-15
             target: macos-arm64
+            ext: tar.gz
           - os: windows-2025
             target: windows-x64
+            ext: zip
           - os: windows-11-arm
             target: windows-arm64
+            ext: zip
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
@@ -37,47 +74,55 @@ jobs:
       - run: npm ci --omit=dev
       - run: npm run validate
       - run: node scripts/build-release.mjs ${{ matrix.target }}
-      - uses: actions/upload-artifact@v5
-        with:
-          name: figma-zh-cn-${{ matrix.target }}
-          path: dist/figma-zh-cn-${{ matrix.target }}
-          if-no-files-found: error
-
-  publish:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/download-artifact@v5
-        with:
-          path: artifacts
-      - name: Create archives and checksums
+      - name: Package archive (macOS)
+        if: runner.os == 'macOS'
         shell: bash
         run: |
+          set -euo pipefail
+          dir="dist/figma-zh-cn-${{ matrix.target }}"
+          chmod +x "$dir/runtime/node" "$dir/scripts/figma-zh-cn.mjs" "$dir/scripts/install-macos.command" "$dir/scripts/uninstall-macos.command"
           mkdir -p release
-          for dir in artifacts/*; do
-            name="$(basename "$dir")"
-            if [[ "$name" == *windows* ]]; then
-              (cd "$dir" && zip -qr "../../release/$name.zip" .)
-            else
-              chmod +x "$dir/runtime/node" "$dir/scripts/figma-zh-cn.mjs" "$dir/scripts/install-macos.command" "$dir/scripts/uninstall-macos.command"
-              tar -C "$dir" -czf "release/$name.tar.gz" .
-            fi
-          done
-          (cd release && sha256sum * > SHA256SUMS)
-      - name: Resolve tag
-        id: tag
-        shell: bash
-        run: echo "value=${{ inputs.tag || github.ref_name }}" >> "$GITHUB_OUTPUT"
-      - name: Publish GitHub Release
+          tar -C "$dir" -czf "release/figma-zh-cn-${{ matrix.target }}.${{ matrix.ext }}" .
+      - name: Package archive (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path release | Out-Null
+          Compress-Archive -Path "dist/figma-zh-cn-${{ matrix.target }}/*" -DestinationPath "release/figma-zh-cn-${{ matrix.target }}.${{ matrix.ext }}" -Force
+      - name: Upload archive to release
         env:
           GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: gh release upload "${{ needs.prepare.outputs.tag }}" "release/figma-zh-cn-${{ matrix.target }}.${{ matrix.ext }}" --repo "${{ github.repository }}" --clobber
+
+  publish:
+    needs: [prepare, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download uploaded assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
         run: |
-          VERSION_NOTES="$(node -p "require('./manifests/' + require('./package.json').version.replace(/-cn\\..*$/, '') + '.json').notes")"
-          RELEASE_NOTES_PREFIX="$(printf '## 更新说明\n\n%s\n\n以下提交与 PR 由 GitHub 自动汇总。\n\n> 非官方 Figma 简体中文本地维护包。只包含翻译与补丁工具，不包含 Figma 应用。平台验证状态以当前版本清单为准。' "$VERSION_NOTES")"
-          gh release create "${{ steps.tag.outputs.value }}" \
-            release/* \
-            --repo "${{ github.repository }}" \
-            --title "${{ steps.tag.outputs.value }}" \
-            --notes "${RELEASE_NOTES_PREFIX}" \
-            --generate-notes
+          set -euo pipefail
+          mkdir -p release
+          gh release download "${{ needs.prepare.outputs.tag }}" --repo "${{ github.repository }}" --dir release --clobber
+      - name: Create checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd release
+          rm -f SHA256SUMS
+          shopt -s nullglob
+          archives=( *.tar.gz *.zip )
+          sha256sum "${archives[@]}" > SHA256SUMS
+          cat SHA256SUMS
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="${{ needs.prepare.outputs.tag }}"
+          gh release upload "$tag" release/SHA256SUMS --repo "${{ github.repository }}" --clobber
+          gh release edit "$tag" --repo "${{ github.repository }}" --draft=false
