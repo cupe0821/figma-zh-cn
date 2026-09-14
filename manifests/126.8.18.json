@@ -1,7 +1,7 @@
 {
   "figmaVersion": "126.8.18",
-  "translationVersion": "126.8.18-cn.1",
-  "dictionaryEntries": 4868,
+  "translationVersion": "126.8.18-cn.2",
+  "dictionaryEntries": 25000,
   "loaderModule": "fg01",
   "bootstrap": "require(\"fg01\");",
   "platforms": {
@@ -10,5 +10,5 @@
     "windows-x64": "preview",
     "windows-arm64": "preview"
   },
-  "notes": "累计词典扩展至 4868 条；补充 Figma Motion 动画、着色器播放与材质参数、起始点与对象编辑、共享文件夹、套餐与额度、下载进度，以及语言选择等界面翻译。新增“修改语言”对话框的限定翻译，避免语言名称影响用户内容，并继续保护组件与用户命名、代码与 CSS、字体名称和字重、色彩空间等专业内容。macOS Intel 已在 Figma 126.8.18 实机验证，macOS Apple Silicon 与 Windows x64、ARM64 使用同源构建流程并标记为预览，待对应平台实机复验。"
+  "notes": "累计词典扩展至 25000 条。本版以 Figma 官方英文语言包逐条比对为基准，批量补齐此前缺失的界面文案，覆盖导航与菜单、图层与样式、形状与矢量、FigJam 模板、字体与排版、色彩与效果、共享与权限、组织与团队设置、组件与变量等模块。新增活动日志与集成事件模板的按参数匹配，保留用户名、工作区名、邮箱等运行期变量；新增“自动布局设置”对话框的限定翻译；新增官方文案空白差异匹配，可匹配首尾空白或不可见字符不同但语义相同的条目，遇到歧义或已有明确译文时不覆盖。继续保护组件与用户命名、代码与 CSS、字体名称和字重、色彩空间等专业内容。macOS Intel 已在 Figma 126.8.18 实机验证，macOS Apple Silicon 与 Windows x64、ARM64 使用同源构建流程并标记为预览，待对应平台实机复验。"
 }
