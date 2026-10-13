@@ -1001,3 +1001,78 @@ test("翻译加载器包含防重复和动态界面处理", () => {
   assert.match(runtime, /white-space['"],['"]nowrap/);
   assert.ok(Object.keys(dictionary).length >= 4479);
 });
+
+test("社区资源横幅中被链接拆开的文本片段完整翻译", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1, TEXT_NODE: 3 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.translateContextFragmentsForTest=translateContextFragments;\nfunction start(){"), context);
+  const banner = { textContent: "Discover community-made 组件库, 插件, 图标集, and more", parentElement: null };
+  const translate = value => {
+    const node = { nodeType: 3, nodeValue: value, parentElement: banner };
+    context.translateContextFragmentsForTest(node);
+    return node.nodeValue;
+  };
+  assert.equal(translate("Discover community-made "), "发现社区制作的");
+  assert.equal(translate(", "), "、");
+  assert.equal(translate(","), "、");
+  assert.equal(translate(", and more"), "等内容");
+  assert.equal(translate("组件库"), "组件库");
+  const unrelated = { nodeType: 3, nodeValue: ", ", parentElement: { textContent: "Frame 1, Frame 2", parentElement: null } };
+  assert.equal(context.translateContextFragmentsForTest(unrelated), false);
+  assert.equal(unrelated.nodeValue, ", ");
+  assert.equal(dictionary["Discover community-made {librariesLink}, {pluginsLink}, {iconSetsLink}, and more"], "发现社区制作的{librariesLink}、{pluginsLink}、{iconSetsLink}等内容");
+});
+
+test("变量分组、变量名与集合名保留用户手动命名", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1, TEXT_NODE: 3 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;\nfunction start(){"), context);
+  const element = ({ variableName = false, allRow = false } = {}) => ({
+    nodeType: 1, textContent: "", parentElement: null, classList: [],
+    matches: () => false, getAttribute: () => null,
+    closest(selector) {
+      if (selector === '[id="variable-group-all"]') return allRow ? this : null;
+      return variableName && selector.includes("[data-group-row-text]") ? this : null;
+    },
+  });
+  assert.equal(dictionary.Colors, "颜色");
+  for (const name of ["Colors", "Spacing", "Primary", "Background"]) {
+    assert.equal(context.lookupForTest(name, element({ variableName: true })), undefined, name);
+  }
+  assert.notEqual(context.lookupForTest("All", element({ variableName: true, allRow: true })), undefined);
+  assert.equal(context.lookupForTest("Colors", element()), "颜色");
+  assert.match(runtime, /\[data-group-row-text\]/);
+  assert.match(runtime, /\[class\*="variables_modal_table_group_name--"\]/);
+  assert.match(runtime, /\[class\*="variable_name--name--"\]/);
+  assert.match(runtime, /if\(isVariableUserNameContext\(element\)\|\|isVariablePathSegmentNode\(node\)\|\|isStyleUserNameContext\(element\)\)return undefined;/);
+});
+
+test("变量下拉选项中按 / 拆开的路径段保留用户命名", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1, TEXT_NODE: 3 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;\nfunction start(){"), context);
+  const row = { nodeType: 1, textContent: "", parentElement: null, classList: [], matches: () => false, getAttribute: () => null, closest: () => null };
+  const slash = { nodeType: 1, childElementCount: 0, textContent: "/" };
+  const segment = (value, previousSibling, nextSibling) => ({ nodeType: 3, nodeValue: value, parentElement: row, previousSibling, nextSibling });
+  assert.equal(context.lookupForTest("color", segment("color", slash, slash)), undefined);
+  assert.equal(context.lookupForTest("component", segment("component", null, slash)), undefined);
+  assert.equal(context.lookupForTest("disabled", segment("disabled", slash, null)), undefined);
+  assert.equal(context.lookupForTest("color", segment("color", null, null)), "颜色");
+  const notSlash = { nodeType: 1, childElementCount: 0, textContent: "·" };
+  assert.equal(context.lookupForTest("color", segment("color", notSlash, null)), "颜色");
+  assert.match(runtime, /\[data-tooltip-show-left\]\[data-tooltip-offset-x="-23"\]/);
+});
+
+test("样式面板保留用户命名，变量右键菜单复数项完整翻译", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1, TEXT_NODE: 3 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;\nfunction start(){"), context);
+  const element = (styleRow) => ({
+    nodeType: 1, textContent: "", parentElement: null, classList: [], matches: () => false, getAttribute: () => null,
+    closest: selector => styleRow && selector === "[data-renaming]" ? {} : null,
+  });
+  for (const name of ["Default", "Selected", "Disabled", "Button", "Shadow", "Page background"]) {
+    assert.equal(context.lookupForTest(name, element(true)), undefined, name);
+  }
+  assert.equal(context.lookupForTest("Disabled", element(false)), "已禁用");
+  assert.equal(dictionary["Edit variables"], "编辑变量");
+  assert.equal(dictionary["Duplicate variables"], "复制变量");
+  assert.equal(context.lookupForTest("Edit variables"), "编辑变量");
+  assert.equal(context.lookupForTest("Duplicate variables"), "复制变量");
+});

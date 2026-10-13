@@ -120,6 +120,26 @@ function isComponentUserNameContext(element){
   const nodeText=(node.textContent||'').trim().replace(/\s+/g,' ');
   return !!value&&value===nodeText;
 }
+const variableUserNameSelector='[data-tooltip-show-left][data-tooltip-offset-x="-23"],[data-group-row-text],[class*="variables_modal_table_group_name--"],[class*="variables_modal_table_item--variableNameWrapper--"],[class*="variable_name--name--"],[class*="variable_pill--text--"],[class*="variable_list--variableRowName--"],[class*="variable_list--listItemName--"],[class*="variable_set_preview--name--"],[class*="variable_collection_header--variableCollectionName--"],[class*="variable_details_view--variableName--"],[class*="variable_mode_entries--variableSetName--"]';
+function isVariableUserNameContext(element){
+  const host=element?.closest?.(variableUserNameSelector);
+  if(!host)return false;
+  // The "All" row in the group sidebar is Figma's own label, not a user group.
+  if(host.closest?.('[id="variable-group-all"]'))return false;
+  return true;
+}
+// Local styles panel rows wrap the style or folder name in a [data-renaming] cell.
+function isStyleUserNameContext(element){
+  return !!element?.closest?.('[data-renaming]');
+}
+// Variable pickers render "a/b/c" as bare text nodes split by <span>/</span>.
+function isVariablePathSegmentNode(node){
+  if(!node||node.nodeType!==3)return false;
+  for(const sibling of [node.previousSibling,node.nextSibling]){
+    if(sibling?.nodeType===Node.ELEMENT_NODE&&!sibling.childElementCount&&sibling.textContent?.trim()==='/')return true;
+  }
+  return false;
+}
 function isComponentNameInputContext(element){
   if(!element)return false;
   if(element.matches?.(componentNameInputSelector))return true;
@@ -1396,10 +1416,26 @@ function isRiffUsageContext(element){
   }
   return false;
 }
+const communityDiscoverFragments = [
+  ['Discover community-made ', '发现社区制作的'],
+  ['Discover community-made', '发现社区制作的'],
+  [', and more', '等内容'],
+  [' and more', '等内容'],
+  [', ', '、'],
+  [',', '、']
+];
+function isCommunityDiscoverContext(element){
+  for(let current=element,depth=0;current&&depth<4;current=current.parentElement,depth+=1){
+    const text=(current.textContent||'').replace(/\s+/g,' ').trim();
+    if(text.length>200)continue;
+    if(/^(?:Discover community-made|发现社区制作的)\s*\S[\s\S]*(?:and more|等内容)$/i.test(text))return true;
+  }
+  return false;
+}
 function translateContextFragments(node){
   if(!node||node.nodeType!==Node.TEXT_NODE)return false;
   const element=node.parentElement;
-  const fragments=isRequiredFieldInfoContext(element)?requiredFieldInfoFragments:isRiffUsageContext(element)?riffUsageFragments:undefined;
+  const fragments=isRequiredFieldInfoContext(element)?requiredFieldInfoFragments:isRiffUsageContext(element)?riffUsageFragments:isCommunityDiscoverContext(element)?communityDiscoverFragments:undefined;
   if(!fragments)return false;
   let translated=node.nodeValue;
   for(const [source,target] of fragments){
@@ -1460,6 +1496,7 @@ function lookup(value,node,attributeName){
   const relativeTime=/^\d+\s+(?:seconds?|minutes?|hours?|days?|weeks?|months?|years?)\s+ago$/i.test(normalized)||/^\d+\s*[smhdw]\s+ago$/i.test(normalized);
   if(isEditableTextContext(element)&&attributeName!=='placeholder')return undefined;
   if(componentNameValue)return undefined;
+  if(isVariableUserNameContext(element)||isVariablePathSegmentNode(node)||isStyleUserNameContext(element))return undefined;
   const isComponentDetailText=componentDetailActionTranslations.has(normalized.toLocaleLowerCase('en-US'))||/^includes\s+\d+\s+variants?$/i.test(normalized);
   if(isComponentPropertyValueContext(element)&&!layoutGuideCountAuto&&!directTooltip&&!isComponentDetailText&&normalized.toLocaleLowerCase('en-US')!=='mixed')return undefined;
   if(isCompareListParameterContext(element,normalized))return undefined;

@@ -23,10 +23,32 @@ if (!overlayCode.includes("window.__FigmaZhCN")) {
   throw new Error("Figma Chinese overlay is incomplete");
 }
 
+// Plugin UIs render inside Figma's /plugin-sandbox frame (with an inner
+// "Inner Plugin Iframe"). Their content belongs to the plugin author, so the
+// overlay never runs there.
+const pluginFrameGuard =
+  "/^\\/plugin-sandbox(?:\\/|$)/.test(location.pathname)||window.name==='Inner Plugin Iframe'";
+
 const injectedCode =
-  `if(!window.__FigmaZhCN){window.__FigmaCNBaseMap=${JSON.stringify(baseDictionary)};\n` +
+  `if(!window.__FigmaZhCN){if(!(${pluginFrameGuard})){window.__FigmaCNBaseMap=${JSON.stringify(baseDictionary)};\n` +
   overlayCode +
-  `\ndelete window.__FigmaCNBaseMap;\n}`;
+  `\ndelete window.__FigmaCNBaseMap;\n}}`;
+
+function frameUrlPath(frame) {
+  try {
+    return new URL(frame.url).pathname;
+  } catch {
+    return "";
+  }
+}
+
+function isPluginFrame(frame) {
+  for (let current = frame, depth = 0; current && depth < 8; current = current.parent, depth++) {
+    if (current.name === "Inner Plugin Iframe") return true;
+    if (/^\/plugin-sandbox(?:\/|$)/.test(frameUrlPath(current))) return true;
+  }
+  return false;
+}
 
 function defaultResolveFrame(webContents, processId, routingId) {
   try {
@@ -44,6 +66,7 @@ module.exports = function injectChinese(
 ) {
   function injectFrame(frame, label) {
     if (!frame || frame.isDestroyed?.()) return;
+    if (isPluginFrame(frame)) return;
     Promise.resolve(frame.executeJavaScript(injectedCode)).catch((error) => {
       console.error(`[FigmaCN] Failed to inject ${label}`, error);
     });
@@ -70,3 +93,4 @@ module.exports = function injectChinese(
 };
 
 module.exports.injectedCode = injectedCode;
+module.exports.isPluginFrame = isPluginFrame;
