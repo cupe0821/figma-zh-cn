@@ -1,0 +1,14 @@
+{
+  "figmaVersion": "126.9.13",
+  "translationVersion": "126.9.13-cn.1",
+  "dictionaryEntries": 25002,
+  "loaderModule": "fg01",
+  "bootstrap": "require(\"fg01\");",
+  "platforms": {
+    "macos-x64": "tested",
+    "macos-arm64": "preview",
+    "windows-x64": "preview",
+    "windows-arm64": "preview"
+  },
+  "notes": "适配 Figma 126.9.13，累计词典 25002 条。本版重点是不再翻译用户自己输入的内容：变量弹窗中的集合名、分组名与变量名，变量下拉与绑定列表中按“/”分段显示的变量路径，以及样式面板中的样式名与文件夹名，均保留原始命名；插件界面不再注入翻译脚本，插件内容保持作者原文。补充变量右键菜单“编辑变量”“复制变量”的复数形式，并修复社区资源横幅中被链接拆开的句子。继续保护组件与用户命名、代码与 CSS、字体名称和字重、色彩空间等专业内容。macOS Intel 已在 Figma 126.9.13 实机验证，macOS Apple Silicon 与 Windows x64、ARM64 使用同源构建流程并标记为预览，待对应平台实机复验。"
+}
