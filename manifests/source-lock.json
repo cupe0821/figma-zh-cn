@@ -1,10 +1,10 @@
 {
-  "version": "126.9.13-cn.1",
+  "version": "126.12.8-cn.1",
   "files": {
     "src/translation-loader/index.js": "c7d195960ff0693b58113dbdb224b8effae8f9fabb53e5baee6e28c64b15d447",
-    "src/translation-loader/js/figmaCN.js": "293aae5876f937983c97965f3fd5f0edecb6ac019f1ed80d01b281e58989c116",
-    "src/translation-loader/js/lang.cn.json": "63ce11ad4515f451830dc0543772a74014a42030bdde624fe467486317c88831",
-    "src/translation-loader/js/lang.cn.menu.json": "d193436ec06e9d478b5608efe92164bfad3adcd387012cb23512bec130ada91b",
+    "src/translation-loader/js/figmaCN.js": "c1395d599620d261f7dc2d080cdac4d16877aa88675c6d70c88544617df2d924",
+    "src/translation-loader/js/lang.cn.json": "39745816fc19b0d0a74d10edbac17e779a6872db73601a2dbc1b75e8ff45b3d3",
+    "src/translation-loader/js/lang.cn.menu.json": "c50dfcb49815f5af46d7fe85800fb3c66ea83d2c9153a8751c22603d0973e521",
     "src/translation-loader/lib/injectJsToWebContents.js": "3613a4ea1d21e045c82379eb54ca8f45bc12672d928d3a8a3b966b7f30fcc61b",
     "src/translation-loader/lib/injectMenuCN.js": "8edaeba5f7bf9705420ece703f6bf5ab5e0e135b6dd753981122945929cc1acb",
     "src/translation-loader/package.json": "9d1967d7d16a7cebbc6130bdd0e82fb9e125db79da083e18da6547f96e3420f1"

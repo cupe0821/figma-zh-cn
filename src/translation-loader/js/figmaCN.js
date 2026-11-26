@@ -66,13 +66,14 @@ const autoLayoutSettingsTranslations=new Map([
   ['inside stroke','内部描边'],['auto spacing','自动间距'],['between','等距'],['legacy','旧版'],['updated','新版']
 ]);
 const shaderOnlyMap={"X":"横向","Y":"纵向","R":"半径","A":"角度","Light":"光照","Hex":"六边形","Hexagon":"六边形","Hexagonal":"六边形"};
-const generatedLayerMap={frame:'画框',rectangle:'矩形',ellipse:'椭圆',polygon:'多边形',star:'星形',line:'直线',vector:'矢量',group:'组',section:'分区',component:'组件',instance:'实例',text:'文本'};
 const fontWeightNames=new Set(['thin','hairline','extra light','ultra light','light','book','regular','roman','normal','medium','standard','semi bold','semibold','demi bold','demibold','bold','extra bold','extrabold','ultra bold','heavy','black','extra black','italic','oblique','bold italic']);
 const colorSpaceNames=new Set(['rgb','cmyk','bw light','bw dark','srgb','linear','oklab','lab','lch','oklch','display p3','p3','hsl','hsv','hsb']);
 const shaderQualityNames=new Set(['low','medium','high']);
 const iphoneDeviceColorTranslations={black:'黑色',white:'白色'};
 const themeOptionTranslations={dark:'黑色',light:'浅色'};
 const iphoneDeviceColorPaletteSignatures=[
+  [['burgundy','酒红色'],['glacier','冰川蓝色'],['silver','银色']],
+  [['night sky','夜空色'],['star white','星辰白色']],
   [['lavender','薰衣草紫色'],['sage','鼠尾草绿色'],['mist blue','青雾蓝色']],
   [['pink','粉色'],['teal','深青色'],['ultramarine','群青色']],
   [['blue','蓝色'],['green','绿色'],['pink','粉色'],['yellow','黄色']],
@@ -101,7 +102,7 @@ const compactMotionTooltipAttribute='data-figma-cn-compact-motion-tooltip';
 const controlledAutoInputs=new WeakSet();
 const controlledAutoOverlayAttribute='data-figma-cn-controlled-auto';
 const controlledAutoOverlayStyleId='figma-cn-controlled-auto-style';
-const attrs=['aria-label','aria-description','aria-valuetext','data-label','data-tooltip','placeholder','title','alt'];
+const attrs=['aria-label','aria-description','aria-valuetext','data-label','data-tooltip','placeholder','title','alt','data-figspec-placeholder'];
 const connectedTeamFragments=[
   ['connected folder','已连接文件夹'],
   ['Everyone in it will be able to edit files and','项目中的所有人都可以编辑文件并'],
@@ -120,13 +121,20 @@ function isComponentUserNameContext(element){
   const nodeText=(node.textContent||'').trim().replace(/\s+/g,' ');
   return !!value&&value===nodeText;
 }
-const variableUserNameSelector='[data-tooltip-show-left][data-tooltip-offset-x="-23"],[data-group-row-text],[class*="variables_modal_table_group_name--"],[class*="variables_modal_table_item--variableNameWrapper--"],[class*="variable_name--name--"],[class*="variable_pill--text--"],[class*="variable_list--variableRowName--"],[class*="variable_list--listItemName--"],[class*="variable_set_preview--name--"],[class*="variable_collection_header--variableCollectionName--"],[class*="variable_details_view--variableName--"],[class*="variable_mode_entries--variableSetName--"]';
+// The current variable table renders each group path in a full-width row.
+const variableUserNameSelector='[data-tooltip-show-left][data-tooltip-offset-x="-23"],[data-group-row-text],[class*="variables_modal_table_group_name--"],[data-testid="variables-modal-table"] [class*="variables_spreadsheet--fullWidthRow--"][data-index],[class*="variables_modal_table_item--variableNameWrapper--"],[class*="variable_name--name--"],[class*="variable_pill--text--"],[class*="variable_list--variableRowName--"],[class*="variable_list--listItemName--"],[class*="variable_set_preview--name--"],[class*="variable_collection_header--variableCollectionName--"],[class*="variable_details_view--variableName--"],[class*="variable_mode_entries--variableSetName--"]';
 function isVariableUserNameContext(element){
   const host=element?.closest?.(variableUserNameSelector);
   if(!host)return false;
   // The "All" row in the group sidebar is Figma's own label, not a user group.
   if(host.closest?.('[id="variable-group-all"]'))return false;
   return true;
+}
+// Pages and layers panels: page, divider and layer names are user-defined (tooltips/aria labels stay translatable).
+// Layers panel rows: current rows are [data-testid="{guid}-layers-panel-row"]; legacy rows use object_row--rowText.
+const pageUserNameSelector='[class*="pages_panel--renameableNodeText--"]:not([class*="renameableNodeTextEnd"]),[data-testid="pageDividerTitle"],[class*="object_row--rowText--"],[data-testid$="-layers-panel-row"]';
+function isPageUserNameContext(element,attributeName){
+  return !attributeName&&!!element?.closest?.(pageUserNameSelector);
 }
 // Local styles panel rows wrap the style or folder name in a [data-renaming] cell.
 function isStyleUserNameContext(element){
@@ -147,6 +155,13 @@ function isComponentNameInputContext(element){
   if(!parent?.matches?.(componentNameInputSelector))return false;
   return parent.matches?.('input,textarea,[contenteditable="true"],[role="textbox"]')||parent.isContentEditable===true;
 }
+// Spec editor placeholders live inside the editable root but are Figma's own copy:
+// the empty-body hint next to the Markdown import button, and data-figspec-placeholder.
+function isFigspecPlaceholderContext(element){
+  if(!element)return false;
+  if(element.closest?.('[data-figspec-markdown-import]'))return true;
+  return element.getAttribute?.('aria-hidden')==='true'&&!!element.parentElement?.querySelector?.('[data-figspec-markdown-import]');
+}
 function isEditableTextContext(element){
   for(let current=element,depth=0;current&&depth<12;current=current.parentElement,depth++){
     if(current.isContentEditable===true||current.matches?.('input,textarea,[contenteditable="true"],[role="textbox"]'))return true;
@@ -166,6 +181,9 @@ function localizeClockTime(value){
   return match?`${match[2].toUpperCase()==='AM'?'上午':'下午'} ${match[1]}`:undefined;
 }
 function isPaymentDetailsContext(element){
+  // Checkout mounts the address controls in a Stripe frame with its own document.
+  const page=globalThis.location;
+  if(page?.origin==='https://js.stripe.com'&&/^\/v3\/elements-inner-address-[a-f0-9]+\.html$/.test(page.pathname))return true;
   for(let current=element,depth=0;current&&depth<9;current=current.parentElement,depth++){
     const text=(current.textContent||'').replace(/\s+/g,' ').trim();
     if(text.length<=1800&&/(?:Update payment details|更新付款信息)/i.test(text)&&/(?:Card number|卡号|Billing address|账单地址)/i.test(text))return true;
@@ -183,10 +201,34 @@ function localizeRelativeTime(value){
   match=normalized.match(/^(\d+)\s*([smhdw])\s+ago$/i);
   return match?`${match[1]} ${{s:'秒',m:'分钟',h:'小时',d:'天',w:'周'}[match[2].toLowerCase()]}前`:undefined;
 }
+// The type panel's font style select keeps the font's own weight/style name once chosen.
+// Its button is labelled by a hidden <label> ("Font style"), linked by htmlFor or wrapped together.
+function isFontStyleSelectValue(element,normalized){
+  if(!element||!fontWeightNames.has(normalized.toLocaleLowerCase('en-US')))return false;
+  const isFontStyleLabel=text=>/font style|字体样式/i.test((text||'').replace(/\s+/g,' '));
+  const button=element.closest?.('button,[role="combobox"]');
+  if(button){
+    for(const label of button.labels??[])if(isFontStyleLabel(label.textContent))return true;
+    for(const id of (button.getAttribute?.('aria-labelledby')||'').split(/\s+/).filter(Boolean)){
+      if(isFontStyleLabel(document.getElementById?.(id)?.textContent))return true;
+    }
+    if(isFontStyleLabel(button.getAttribute?.('aria-label')))return true;
+  }
+  for(let current=element,depth=0;current&&depth<5;current=current.parentElement,depth+=1){
+    const text=(current.textContent||'').replace(/\s+/g,' ').trim();
+    if(text.length<=80&&isFontStyleLabel(text))return true;
+  }
+  return false;
+}
 function isFontWeightContext(element,normalized){
   if(!element||!fontWeightNames.has(normalized.toLocaleLowerCase('en-US')))return false;
   const weightControl=element.closest?.('[aria-label*="font weight" i],[aria-label*="font style" i],[data-testid*="font-weight" i],[data-testid*="font_weight" i],[class*="font_weight" i],[class*="font-weight" i]');
   if(weightControl)return true;
+  // The type panel's font style select: a short control whose (hidden) label is "Font style" plus the selected weight.
+  for(let current=element,depth=0;current&&depth<4;current=current.parentElement,depth+=1){
+    const text=(current.textContent||'').replace(/\s+/g,' ').trim().toLocaleLowerCase('en-US');
+    if(text.length<=80&&/font style|字体样式/.test(text))return true;
+  }
   const popup=element.closest?.('[role="listbox"],[role="menu"]');
   if(!popup)return false;
   const weights=new Set();
@@ -196,6 +238,75 @@ function isFontWeightContext(element,normalized){
   }
   if(weights.size>=2)return true;
   return false;
+}
+// Community category/tag chips come from the server; some words mean something else in the editor.
+const communityTagTranslations={'travel':'旅行','event':'活动','events':'活动','simple':'简约','user profile':'用户资料','real estate':'房地产','navbar':'导航栏','chatbot':'聊天机器人','personal website':'个人网站','marketplace':'交易市场','e-learning':'在线学习','login':'登录','dashboards':'仪表板','dashboard':'仪表板'};
+// Tag rows are recognised by their content: several well-known website/template categories side by side.
+const communityTagSignatures=[['wedding','婚礼'],['portfolio','作品集'],['landing page','落地页'],['restaurant','餐厅'],['blog','博客'],['cms'],['crm'],['saas'],['real estate','房地产'],['chatbot','聊天机器人'],['navbar','导航栏'],['photography','摄影'],['fashion','时尚'],['interior design','室内设计']];
+function isCommunityTagRow(element){
+  if(element?.closest?.('[class*="category_links_container--"]'))return true;
+  for(let current=element?.parentElement,depth=0;current&&depth<4;current=current.parentElement,depth+=1){
+    if((current.childElementCount??0)<6)continue;
+    const text=(current.textContent||'').replace(/\s+/g,' ').toLocaleLowerCase('en-US');
+    if(text.length>1200)continue;
+    const hits=communityTagSignatures.filter(labels=>labels.some(label=>text.includes(label))).length;
+    if(hits>=5)return true;
+  }
+  return false;
+}
+function localizeCommunityTag(element,normalized){
+  const translated=communityTagTranslations[normalized.toLocaleLowerCase('en-US')];
+  return translated&&isCommunityTagRow(element)?translated:undefined;
+}
+// Figma's first-party animation presets, their section headings and speed labels in the animation picker.
+const motionPresetPickerTranslations={'text enter':'文本入场','text exit':'文本退场','enter':'入场','exit':'退场','loop':'循环','fast':'快速','medium':'中速','slow':'慢速','aftershock':'余震','arc':'弧线','breathe':'呼吸','burst':'迸发','cartoon':'卡通','crank':'摇转','creep':'蠕动','deflate':'泄气','descend':'下降','domino':'多米诺','domino glide':'多米诺滑行','drop':'坠落','error':'错误','evaporate':'蒸发','fall':'落下','feather':'飘羽','flick':'轻弹','fling':'甩出','flip':'翻转','float':'漂浮','focus':'聚焦','glide':'滑行','glitch':'故障','glitch rise':'故障升起','grand finale':'盛大谢幕','ignite':'点燃','launch':'发射','magnify':'放大','moonwalk':'太空步','orbit':'环绕','pivot':'枢转','poof':'噗散','pop':'跳动','popcorn':'爆米花','press':'按下','pulse':'脉冲','pulse train':'脉冲串','rain':'雨落','random focus':'随机聚焦','random rain':'随机雨落','recede':'远去','reveal':'显现','rise':'升起','scoot':'疾移','scootch':'微挪','scritto':'书写','sink':'下沉','slam':'猛落','slide':'滑动','snap zoom':'快速缩放','soft focus':'柔焦','spin':'自转','splat':'飞溅','spotlight':'聚光灯','spring':'弹簧','sweep':'横扫','swipe':'轻扫','swoop':'俯冲','tick':'嘀嗒','tip':'倾倒','tumble':'翻滚','twist':'扭转','typequake':'文字震动','typewriter':'打字机','vanish':'消失','vortex':'漩涡','word spin':'单词旋转'};
+const motionPresetCategoryKeys=new Set(['text enter','text exit','enter','exit','loop']);
+// The picker's category filter opens as a separate menu: All / [Text enter / Text exit /] Basic / Enter / Loop / Exit.
+function isMotionPresetCategoryMenu(element){
+  const popup=element?.closest?.('[role="listbox"],[role="menu"]');
+  if(!popup)return false;
+  const text=(popup.textContent||'').replace(/\s+/g,' ').toLocaleLowerCase('en-US');
+  if(text.length>200)return false;
+  if(/text enter|文本入场/.test(text)&&/text exit|文本退场/.test(text))return true;
+  // The custom tab's filter has no text categories: All / Basic / Enter / Loop / Exit.
+  // Items can arrive one by one, so Basic plus any one category word is enough.
+  return /basic|基础/.test(text)&&/enter|exit|loop|入场|退场|退出|循环/.test(text);
+}
+function localizeMotionPresetPicker(element,normalized){
+  const key=normalized.toLocaleLowerCase('en-US');
+  const translated=motionPresetPickerTranslations[key];
+  if(!translated)return undefined;
+  if(element?.closest?.('[data-testid="animation-style-picker"]'))return translated;
+  return motionPresetCategoryKeys.has(key)&&isMotionPresetCategoryMenu(element)?translated:undefined;
+}
+// Text stagger (motion text animation) options whose global meanings differ.
+const textStaggerOptionTranslations={in:'入场',word:'单词',line:'行',random:'随机'};
+function isTextStaggerContext(element){
+  if(!element)return false;
+  if(element.closest?.('[data-animation-preset-detail-flyout]'))return true;
+  const popup=element.closest?.('[role="listbox"],[role="menu"]');
+  if(!popup)return false;
+  const text=(popup.textContent||'').replace(/\s+/g,' ').trim().toLocaleLowerCase('en-US');
+  if(text.length>200)return false;
+  const has=(...labels)=>labels.some(label=>text.includes(label));
+  if(has('character','字符')&&has('paragraph','段落'))return true;
+  if(has('center out','从中心向外')&&has('left to right','从左到右'))return true;
+  return /^(?:in|入场) ?(?:out|退场)$/.test(text);
+}
+// Motion presets also expose an "animationDirection" property row: "Direction  [In]".
+function isAnimationDirectionRowContext(element){
+  for(let current=element,depth=0;current&&depth<6;current=current.parentElement,depth+=1){
+    const text=(current.textContent||'').replace(/\s+/g,'').toLocaleLowerCase('en-US');
+    if(/^(?:direction|方向)(?:in|入场)$/.test(text))return true;
+  }
+  return false;
+}
+function localizeTextStaggerOption(element,normalized){
+  const key=normalized.toLocaleLowerCase('en-US');
+  const translated=textStaggerOptionTranslations[key];
+  if(!translated)return undefined;
+  if(isTextStaggerContext(element))return translated;
+  return key==='in'&&isAnimationDirectionRowContext(element)?translated:undefined;
 }
 function localizeDirectTooltip(element,normalized){
   if(!element?.hasAttribute?.('data-tooltip'))return undefined;
@@ -305,17 +416,25 @@ function isCompareListParameterContext(element,normalized){
   }
   return false;
 }
+function getDropdownTrigger(popup){
+  const popupId=popup?.getAttribute?.('id');
+  if(!popupId)return undefined;
+  const escaped=globalThis.CSS?.escape?CSS.escape(popupId):popupId.replace(/["\\]/g,'\\$&');
+  return document.querySelector?.(`[aria-controls="${escaped}"],[aria-owns="${escaped}"]`);
+}
+function isComponentVariantValueContext(element){
+  const control=element?.closest?.('[role="combobox"],[role="listbox"]');
+  const trigger=control?.getAttribute?.('role')==='listbox'?getDropdownTrigger(control):control;
+  // The portalled options share the ID referenced by the variant select trigger.
+  const labelIds=trigger?.getAttribute?.('aria-labelledby')||'';
+  return labelIds.split(/\s+/).some(id=>id&&document.getElementById?.(id)?.matches?.('label[class*="prop_assignment_row--componentPropNameViewOnly--"]'));
+}
 function isComponentPropertyValueContext(element){
   if(!element)return false;
   if(element.closest?.(componentPropertyControlSelector))return true;
   const popup=element.closest?.('[role="listbox"],[role="menu"]');
   if(popup&&(popup.matches?.(componentPropertyControlSelector)||popup.querySelector?.(componentPropertyControlSelector)))return true;
-  const popupId=popup?.getAttribute?.('id');
-  if(popupId){
-    const escaped=globalThis.CSS?.escape?CSS.escape(popupId):popupId.replace(/["\\]/g,'\\$&');
-    const trigger=document.querySelector?.(`[aria-controls="${escaped}"],[aria-owns="${escaped}"]`);
-    if(trigger?.closest?.(componentPropertyControlSelector))return true;
-  }
+  if(getDropdownTrigger(popup)?.closest?.(componentPropertyControlSelector))return true;
   let container=popup||element;
   for(let depth=0;container&&depth<6;depth++,container=container.parentElement){
     const text=(container.textContent||'').trim().replace(/\s+/g,' ').toLocaleLowerCase('en-US');
@@ -358,6 +477,14 @@ function isExportQualityContext(element,normalized){
   }
   return false;
 }
+function isShaderShapeMenu(element){
+  const popup=element?.closest?.('[role="listbox"],[role="menu"]');
+  if(!popup)return false;
+  const text=(popup.textContent||'').replace(/\s+/g,' ').toLocaleLowerCase('en-US');
+  if(text.length>200)return false;
+  const hits=[/rectangle|矩形/,/ellipse|椭圆/,/triangle|三角形/].filter(re=>re.test(text)).length;
+  return hits>=2;
+}
 function isShaderQualityPopup(element,normalized){
   if(!element||!shaderQualityNames.has(normalized.toLocaleLowerCase('en-US')))return false;
   let container=element;
@@ -392,7 +519,7 @@ function isTrashDialogContext(element){
     const text=(container.textContent||'').replace(/\s+/g,' ').trim();
     if(text.length>1200)continue;
     if(/(?:Move file to trash|将文件移到回收站)/i.test(text))return true;
-    if(/(?:You're about to move the file|You can always restore it later from|Anyone with edit access on the project|你即将把文件|项目中任何拥有编辑权限)/i.test(text)&&/(?:trash|to trash|回收站|恢复该文件)/i.test(text))return true;
+    if(/(?:You're about to move the file|You can always restore it later from|Anyone with edit access on the (?:project|folder)|你即将把文件|(?:项目|文件夹)中任何拥有编辑权限)/i.test(text)&&/(?:trash|to trash|回收站|恢复该文件)/i.test(text))return true;
   }
   return false;
 }
@@ -1345,7 +1472,24 @@ const reviewedSingleParameterSources = [
   "Follow {name}",
   "For higher AI credit limits in {planName}, request an upgrade to a Full seat. ",
   "For higher MCP tool call limits in {planName}, request an upgrade to a Full seat. ",
-  "{teamName} is locked and cannot add more files."
+  "{teamName} is locked and cannot add more files.",
+  "You can paste up to {maxCaptures} code layers at a time. Copy fewer pages and try again.",
+  "{teamName} - Education plan",
+  "Are you sure you want to delete \"{chatTitle}\"? This can’t be undone.",
+  "Moving a draft to a project will move you to a Full seat in {planName}.",
+  "Moving a draft to a project will move you to a Collab seat in {planName}.",
+  "Moving a draft to a project will move you to a Dev seat in {planName}.",
+  "Moving a draft to a folder will move you to a Full seat in {planName}.",
+  "Moving a draft to a folder will move you to a Collab seat in {planName}.",
+  "Moving a draft to a folder will move you to a Dev seat in {planName}.",
+  "Show in {destination}",
+  "People from {source}",
+  "Permissions from folder {folderName}",
+  "Permissions from team {teamName}",
+  "Plan: {name}",
+  "Change plan. {teamName} currently on Free plan",
+  "Change plan. {teamName} is currently locked",
+  "Change plan. {teamName} is currently on the Professional plan"
 ];
 const reviewedSingleParameterRules = reviewedSingleParameterSources.flatMap(source => {
   const tokens = [...source.matchAll(/\{(\w+)\}/g)];
@@ -1432,6 +1576,134 @@ function isCommunityDiscoverContext(element){
   }
   return false;
 }
+// The move-file dialog renders "To move this file, you need to be granted edit access to " + folder + ".".
+const moveEditAccessPieces=new Map([
+  ['to move this file, you need to be granted edit access to','要移动此文件，您需要获得 '],
+  ['.',' 的编辑权限。']
+]);
+// Role request banner: <b>{userName}</b> and <b>{othersText}</b> are asking to {requestType}.
+function translateRoleRequestBanner(node){
+  if(!node||node.nodeType!==Node.TEXT_NODE)return false;
+  const value=node.nodeValue.trim().replace(/\s+/g,' ');
+  let translated,match;
+  if(match=value.match(/^are asking to (view|edit)$/i))translated=match[1].toLowerCase()==='view'?'请求查看':'请求编辑';
+  else if(/^1 other person$/i.test(value))translated='另外 1 人';
+  else if(match=value.match(/^(\d[\d,]*) others$/i))translated=`另外 ${match[1]} 人`;
+  if(!translated)return false;
+  let inBanner=false;
+  for(let current=node.parentElement,depth=0;current&&depth<4;current=current.parentElement,depth+=1){
+    const text=(current.textContent||'').replace(/\s+/g,' ').trim();
+    if(text.length<=300&&/(?:are asking to (?:view|edit)|请求(?:查看|编辑))$/i.test(text)){inBanner=true;break;}
+  }
+  if(!inBanner)return false;
+  applyTranslatedText(node,node.nodeValue,(/^\s/.test(node.nodeValue)?' ':'')+translated+(/\s$/.test(node.nodeValue)?' ':''));
+  return true;
+}
+// Sentences split around a bold folder/project name: [start pattern, piece translations].
+const splitNameSentences=[
+  [/^(?:[•·]\s*)?(?:By selecting to save your info, you agree to create an account subject to Link['’]s|选择保存信息即表示您同意创建 Link 账户，并接受 Link 的)/i,new Map([
+    ['by selecting to save your info, you agree to create an account subject to link’s','选择保存信息即表示您同意创建 Link 账户，并接受 Link 的'],
+    ["by selecting to save your info, you agree to create an account subject to link's",'选择保存信息即表示您同意创建 Link 账户，并接受 Link 的'],
+    ['and','和'],
+    ['.','。']
+  ])],
+  [/^(?:To move this file, you need to be granted edit access to|要移动此文件，您需要获得)/,moveEditAccessPieces],
+  [/^(?:People can access this file because they have access to|人员可以访问此文件，因为他们拥有)/,new Map([
+    ['people can access this file because they have access to','人员可以访问此文件，因为他们拥有 '],
+    ['.',' 的访问权限。']
+  ])],
+  [/^(?:Figma has restricted you from (?:sharing this file|sharing this folder|sending invites for this team)\.|Figma 已限制您(?:共享此文件|共享此文件夹|为此团队发送邀请)。)/,new Map([
+    ['figma has restricted you from sharing this file. please email','Figma 已限制您共享此文件。如需帮助，请发送邮件至 '],
+    ['figma has restricted you from sharing this folder. please email','Figma 已限制您共享此文件夹。如需帮助，请发送邮件至 '],
+    ['figma has restricted you from sending invites for this team. please email','Figma 已限制您为此团队发送邀请。如需帮助，请发送邮件至 '],
+    ['for help.','。']
+  ])],
+  [/^(?:Your team is over Starter plan limits\. To unlock,|您的团队已超出入门版套餐限制。要解锁，请)/,new Map([
+    ['your team is over starter plan limits. to unlock,','您的团队已超出入门版套餐限制。要解锁，请'],
+    [',','、'],
+    [', or move some work.','，或移动部分内容。']
+  ])],
+  [/^(?:By clicking "Create team", you agree to the|点击“创建团队”即表示您同意)/,new Map([
+    ['by clicking "create team", you agree to the','点击“创建团队”即表示您同意'],
+    ['and acknowledge the','并确认'],
+    ['.','。']
+  ])],
+  [/^(?:Permissions from (?:folder|team)|(?:文件夹|团队)权限：)/,new Map([
+    ['permissions from folder','文件夹权限：'],
+    ['permissions from team','团队权限：']
+  ])]
+];
+function translateMoveEditAccess(node){
+  if(!node||node.nodeType!==Node.TEXT_NODE)return false;
+  const key=node.nodeValue.trim().replace(/\s+/g,' ').toLocaleLowerCase('en-US');
+  for(const [start,pieces] of splitNameSentences){
+    const translated=pieces.get(key);
+    if(!translated)continue;
+    for(let current=node.parentElement,depth=0;current&&depth<3;current=current.parentElement,depth+=1){
+      const text=(current.textContent||'').replace(/\s+/g,' ').trim();
+      if(text.length<=300&&start.test(text)&&text.toLocaleLowerCase('en-US')!==key){
+        applyTranslatedText(node,node.nodeValue,translated);
+        return true;
+      }
+    }
+  }
+  return false;
+}
+// Checkout consent is rendered as text pieces around the terms, renewal and privacy links.
+const purchaseConsentPieces=new Map([
+  ['by clicking "complete purchase," i agree to figma\'s','点击“完成购买”即表示我同意 Figma 的'],
+  [',','和'],
+  [', including that my figma subscription will automatically renew every month and my payment method will be automatically charged unless and until i cancel or modify my plan in my admin settings, and i acknowledge figma\'s','，包括我的 Figma 订阅将每月自动续订，且除非我在管理设置中取消或修改方案，否则将自动从我的付款方式扣款；我也确认已了解 Figma 的'],
+  [', including that my figma subscription will automatically renew every 12 months and my payment method will be automatically charged unless and until i cancel or modify my plan in my admin settings, and i acknowledge figma\'s','，包括我的 Figma 订阅将每 12 个月自动续订，且除非我在管理设置中取消或修改方案，否则将自动从我的付款方式扣款；我也确认已了解 Figma 的'],
+  ['.','。']
+]);
+const subscriptionConsentPieces=new Map([
+  ['i agree to figma\'s','我同意 Figma 的'],
+  [',','、'],
+  [', and','和'],
+  [', including that my figma subscription will automatically renew every month and my payment method will be automatically charged unless and until i cancel or modify my plan in my admin settings.','。我的 Figma 订阅将每月自动续订。除非我在管理设置中取消或修改方案，否则将通过我选择的付款方式自动扣款。'],
+  [', including that my figma subscription will automatically renew every 12 months and my payment method will be automatically charged unless and until i cancel or modify my plan in my admin settings.','。我的 Figma 订阅将每 12 个月自动续订。除非我在管理设置中取消或修改方案，否则将通过我选择的付款方式自动扣款。']
+]);
+function getPurchaseConsentPieces(element){
+  for(let current=element,depth=0;current&&depth<4;current=current.parentElement,depth+=1){
+    const text=(current.textContent||'').replace(/\s+/g,' ').trim();
+    if(text.length>800)continue;
+    if(!/including that my Figma subscription will automatically renew|Figma 订阅将每(?:月| 12 个月)自动续订/i.test(text))continue;
+    if(/^(?:I agree to Figma['’]s|我同意 Figma 的)/i.test(text))return subscriptionConsentPieces;
+    if(/Complete Purchase|完成购买/i.test(text))return purchaseConsentPieces;
+  }
+}
+function translatePurchaseConsent(node){
+  if(!node||node.nodeType!==Node.TEXT_NODE)return false;
+  const key=node.nodeValue.trim().replace(/\s+/g,' ').replace(/[‘’]/g,"'").replace(/[“”]/g,'"').toLocaleLowerCase('en-US');
+  if(!purchaseConsentPieces.has(key)&&!subscriptionConsentPieces.has(key))return false;
+  const translated=getPurchaseConsentPieces(node.parentElement)?.get(key);
+  if(!translated)return false;
+  applyTranslatedText(node,node.nodeValue,translated);
+  return true;
+}
+// The locked-team banner is rendered as "All" + " of this team’s work … unlocked. " + link.
+const lockedTeamBannerPieces=new Map([
+  ['all','此团队的所有内容'],
+  ['of this team’s work is currently view-only. you can edit again when the team is unlocked.','目前仅可查看。团队解锁后即可恢复编辑。'],
+  ['of this team’s work is currently view-only. you can use dev mode again when the team is unlocked.','目前仅可查看。团队解锁后即可重新使用开发模式。']
+]);
+function isLockedTeamBannerContext(element){
+  for(let current=element,depth=0;current&&depth<4;current=current.parentElement,depth+=1){
+    const text=(current.textContent||'').replace(/\s+/g,' ').trim();
+    if(text.length>400)continue;
+    if(/of this team['’]s work is currently view-only|目前仅可查看。团队解锁后即可/i.test(text))return true;
+  }
+  return false;
+}
+function translateLockedTeamBanner(node){
+  if(!node||node.nodeType!==Node.TEXT_NODE)return false;
+  const key=node.nodeValue.trim().replace(/\s+/g,' ').replace(/'/g,'’').toLocaleLowerCase('en-US');
+  const translated=lockedTeamBannerPieces.get(key);
+  if(!translated||!isLockedTeamBannerContext(node.parentElement))return false;
+  applyTranslatedText(node,node.nodeValue,translated);
+  return true;
+}
 function translateContextFragments(node){
   if(!node||node.nodeType!==Node.TEXT_NODE)return false;
   const element=node.parentElement;
@@ -1447,6 +1719,43 @@ function translateContextFragments(node){
 }
 function localizeNewDynamicTemplate(value){
   let match;
+  // Resolve color counts before the generic "See all {categoryTitle}" template.
+  if(match=value.match(/^(?:See all|查看全部)\s+(\d+(?:,\d{3})*)\s+(library\s+)?colors?$/i)){
+    return `查看全部 ${match[1]} 种${match[2]?'组件库':''}颜色`;
+  }
+  if(match=value.match(/^Up to (\d[\d,]*) extra AI credits$/i))return `最多可获 ${match[1]} 点额外 AI 额度`;
+  if(match=value.match(/^Invite (?:up to (\d[\d,]*) )?collaborators? to Figma\. You['’]ll get (\d[\d,]*) AI credits for each friend that creates a new account, and they each get (\d[\d,]*) credits to build with, too!$/i)){
+    const [,invites,ownerCredits,friendCredits]=match;
+    const intro=invites?`最多可邀请 ${invites} 位协作者加入 Figma。`:'邀请协作者加入 Figma。';
+    return intro+`每有一位好友注册新账户，您就能获得 ${ownerCredits} 点 AI 额度，对方也能获得 ${friendCredits} 点额度用于创作。`;
+  }
+  if(match=value.match(/^Move\s+(\d[\d,]*)\s+Figma Specs files?$/))return `移动 ${match[1]} 个 Figma Specs 文件`;
+  if(match=value.match(/^Fixed perspective on\s+(\d[\d,]*)\s+layers?$/))return `已修复 ${match[1]} 个图层的透视`;
+  if(match=value.match(/^Sort:\s*(.+)$/)){
+    const label=map[match[1]]??ciMap.get(match[1].toLocaleLowerCase('en-US'))??match[1];
+    return `排序：${label}`;
+  }
+  if(match=value.match(/^(\d[\d,]*)\s+files moved$/))return `${match[1]} 个文件已移动`;
+  if(match=value.match(/^(\d[\d,]*)\s+files moved to trash$/))return `${match[1]} 个文件已移动到回收站`;
+  // File browser tile menu with several items selected (tile.dropdown.* plural forms).
+  if(match=value.match(/^(Duplicate|Move|Trash|Restore)\s+(\d[\d,]*)\s+(files|folders|items)(\s+to…|\s+to\.\.\.)?$/)){
+    const [,action,count,kind,to]=match;
+    const noun={files:`${count} 个文件`,folders:`${count} 个文件夹`,items:action==='Move'?`${count} 个项目`:`${count} 项`}[kind];
+    if(action==='Restore')return to?`将 ${noun}恢复到…`:`恢复 ${noun}`;
+    if(to)return undefined;
+    return {Duplicate:`复制 ${noun}`,Move:`移动 ${noun}`,Trash:`将 ${noun}移到回收站`}[action];
+  }
+  if(match=value.match(/^Remove\s+(\d[\d,]*)\s+items from recent$/))return `从最近使用中移除 ${match[1]} 项`;
+  if(match=value.match(/^Uploading\s+(\d[\d,]*)(?:\s+of\s+|\/)(\d[\d,]*)\s+font files(?:…|\.\.\.)?$/i))return `正在上传字体文件（${match[1]}/${match[2]}）…`;
+  if(match=value.match(/^Font upload complete with\s+(\d[\d,]*)\s+errors?$/i))return `字体上传完成，出现 ${match[1]} 个错误`;
+  if(match=value.match(/^Your seat in the\s+(.+?)\s+Education plan comes with\s+(\d[\d,]*)\s+credits a month\.\s+Your seat credits reset\s+(at\s+)?(.+?)\.?$/i)){
+    const date=match[3]?(localizeClockTime(match[4])??match[4]):localizeShortDate(match[4]);
+    return `您在 ${match[1]} 教育版中的席位每月包含 ${match[2]} 点额度。您的席位额度将于 ${date} 重置。`;
+  }
+  if(match=value.match(/^(.+?):\s+(Animation visibility|Remove animation)$/i)){
+    const label=map[match[1]]??ciMap.get(match[1].toLocaleLowerCase('en-US'))??match[1];
+    return `${label}：${/^animation/i.test(match[2])?'动画可见性':'移除动画'}`;
+  }
   if(match=value.match(/^All fields marked with\s+\*\s+are required$/i))return '标有 * 的字段均为必填项';
   if(match=value.match(/^(\d[\d,]*)\s+creators?\s+have\s+riffed on this$/i))return `${match[1]} 位创建者对其进行了改编`;
   if(match=value.match(/^(\d[\d,]*)\s+creator has riffed on this$/i))return `${match[1]} 位创建者对其进行了改编`;
@@ -1474,6 +1783,7 @@ function lookup(value,node,attributeName){
   if(typeof value!=='string')return undefined;
   const leading=value.match(/^\s*/)?.[0]??'',trailing=value.match(/\s*$/)?.[0]??'',trimmed=value.trim(),normalized=trimmed.replace(/[\u200B-\u200F\u2060\uFEFF]/g,'').replace(/\s+/g,' ');
   const element=node?.nodeType===Node.ELEMENT_NODE?node:node?.parentElement;
+  if(isComponentVariantValueContext(element))return undefined;
   if(normalized.toLocaleLowerCase('en-US')==='viewed'&&isViewedTimeLabelContext(element))return leading+'查看于'+trailing;
   if(normalized.toLocaleLowerCase('en-US')==='edited'&&isEditedTimeLabelContext(element))return leading+'编辑于'+trailing;
   const languageOption=localizeLanguageOption(element,normalized);
@@ -1489,14 +1799,19 @@ function lookup(value,node,attributeName){
   const layoutGuideCountAuto=isLayoutGuideCountAutoContext(element,normalized);
   const directTooltip=localizeDirectTooltip(element,normalized);
   const textFormattingMenu=localizeTextFormattingMenu(element,normalized);
-  const trashDialogCandidate=/^(?:You're about to move the file|to trash\.|You can always restore it later from the|Anyone with edit access on the project can restore it later from the|(?:the )?Trash section\.|section\.)$/i.test(normalized);
+  const trashDialogCandidate=/^(?:You're about to move the file|to trash\.|You can always restore it later from the|Anyone with edit access on the (?:project|folder) can restore it later from the|(?:the )?Trash section\.|section\.)$/i.test(normalized);
   const trashDialog=trashDialogCandidate&&isTrashDialogContext(element);
   const componentNameValue=isComponentNameInputContext(element);
   const ambiguousThemeName=normalized.toLocaleLowerCase('en-US')==='dark'||normalized.toLocaleLowerCase('en-US')==='light';
   const relativeTime=/^\d+\s+(?:seconds?|minutes?|hours?|days?|weeks?|months?|years?)\s+ago$/i.test(normalized)||/^\d+\s*[smhdw]\s+ago$/i.test(normalized);
-  if(isEditableTextContext(element)&&attributeName!=='placeholder')return undefined;
+  if(isEditableTextContext(element)&&attributeName!=='placeholder'&&attributeName!=='data-figspec-placeholder'&&!isFigspecPlaceholderContext(element))return undefined;
   if(componentNameValue)return undefined;
-  if(isVariableUserNameContext(element)||isVariablePathSegmentNode(node)||isStyleUserNameContext(element))return undefined;
+  if(isVariableUserNameContext(element)||isVariablePathSegmentNode(node)||isStyleUserNameContext(element)||isPageUserNameContext(element,attributeName))return undefined;
+  const communityTag=localizeCommunityTag(element,normalized);
+  if(communityTag)return leading+communityTag+trailing;
+  if(isFontStyleSelectValue(element,normalized))return undefined;
+  const motionPresetName=localizeMotionPresetPicker(element,normalized);
+  if(motionPresetName)return leading+motionPresetName+trailing;
   const isComponentDetailText=componentDetailActionTranslations.has(normalized.toLocaleLowerCase('en-US'))||/^includes\s+\d+\s+variants?$/i.test(normalized);
   if(isComponentPropertyValueContext(element)&&!layoutGuideCountAuto&&!directTooltip&&!isComponentDetailText&&normalized.toLocaleLowerCase('en-US')!=='mixed')return undefined;
   if(isCompareListParameterContext(element,normalized))return undefined;
@@ -1506,12 +1821,20 @@ function lookup(value,node,attributeName){
   const exportQuality=isExportQualityContext(element,normalized);
   if(!blendModeNormal&&!shaderQuality&&!exportQuality&&!iphoneDeviceColor&&!themeOption&&!directTooltip&&!textFormattingMenu&&isFontWeightContext(element,normalized))return undefined;
   if(isColorSpaceContext(element,normalized))return undefined;
+  // In shader settings (e.g. CRT screen) "Static" is TV snow noise, not "not animated".
+  if(normalized.toLocaleLowerCase('en-US')==='static'&&element?.closest?.(shaderPanelSelector))return leading+'雪花噪点'+trailing;
+  const textStaggerOption=localizeTextStaggerOption(element,normalized);
+  if(textStaggerOption)return leading+textStaggerOption+trailing;
+  if(/^(?:state|united states)$/i.test(normalized)&&isPaymentDetailsContext(element)){
+    return /^state$/i.test(normalized)?leading+'州／地区'+trailing:undefined;
+  }
   let translated=directTooltip??textFormattingMenu??map[trimmed]??map[normalized]??ciMap.get(trimmed.toLocaleLowerCase('en-US'))??ciMap.get(normalized.toLocaleLowerCase('en-US'))??whitespaceMap.get(normalized.toLocaleLowerCase('en-US'));
   if(!translated&&trashDialog){
     if(/^You're about to move the file$/i.test(normalized))translated='你即将把文件';
     else if(/^to trash\.$/i.test(normalized))translated='移到回收站。';
     else if(/^You can always restore it later from the$/i.test(normalized))translated='你可以随时从';
     else if(/^Anyone with edit access on the project can restore it later from the$/i.test(normalized))translated='项目中任何拥有编辑权限的人都可以稍后从';
+    else if(/^Anyone with edit access on the folder can restore it later from the$/i.test(normalized))translated='文件夹中任何拥有编辑权限的人都可以稍后从';
     else if(/^(?:the )?Trash section\.$/i.test(normalized))translated='回收站中恢复该文件。';
     else if(/^section\.$/i.test(normalized))translated='中恢复该文件。';
   }
@@ -1519,9 +1842,10 @@ function lookup(value,node,attributeName){
   if(iphoneDeviceColor)translated=iphoneDeviceColorTranslations[normalized.toLocaleLowerCase('en-US')];
   if(themeOption)translated=themeOptionTranslations[normalized.toLocaleLowerCase('en-US')];
   if(layoutGuideCountAuto)translated='自动';
-  if(normalized.toLocaleLowerCase('en-US')==='state'&&isPaymentDetailsContext(element))translated='州';
   if(translated===trimmed||translated===normalized)translated=undefined;
   if(element?.closest?.(shaderPanelSelector)&&shaderOnlyMap[normalized])translated=shaderOnlyMap[normalized];
+  // Shader shape dropdowns open outside the panel: Rectangle / Ellipse / Hexagon / Triangle.
+  if(!translated&&/^hexagon(?:al)?$/i.test(normalized)&&isShaderShapeMenu(element))translated='六边形';
   if(!translated)translated=localizeNewDynamicTemplate(normalized);
   if(!translated)translated=localizeReviewedSingleParameterTemplate(normalized);
   if(!translated){
@@ -1598,7 +1922,6 @@ function lookup(value,node,attributeName){
     else if(match=normalized.match(/^Reset\s+["“](.+)["”]$/i))translated=`重置“${match[1]}”`;
     else if(match=normalized.match(/^(\d+)\s+of\s+(\d+)$/i))translated=`${match[1]} / ${match[2]}`;
     else if(match=normalized.match(/^Step\s+(\d+)\s+of\s+(\d+)$/i))translated=`第 ${match[1]} 步，共 ${match[2]} 步`;
-    else if(match=normalized.match(/^See all\s+(\d+)\s+colors?$/i))translated=`查看全部 ${match[1]} 种颜色`;
     else if(match=normalized.match(/^Show\s+(\d+)\s+more lines? of code$/i))translated=`再显示 ${match[1]} 行代码`;
     else if(match=normalized.match(/^Includes\s+(\d+)\s+variants?$/i))translated=`包含 ${match[1]} 个变体`;
     else if(match=normalized.match(/^Loading\s+(\d+)\s+pages\s+for\s+plugin(?:\.{3}|…)?$/i))translated=`正在为插件加载 ${match[1]} 个页面…`;
@@ -1650,7 +1973,6 @@ function lookup(value,node,attributeName){
     else if(match=normalized.match(/^Export Frame\s+(.+)$/i))translated=`导出画框 ${match[1]}`;
     else if(match=normalized.match(/^Go to Frame\s+(.+)$/i))translated=`转到画框 ${match[1]}`;
     else if(match=normalized.match(/^Export\s+(.+)$/i))translated=`导出 ${match[1]}`;
-    else if(match=normalized.match(/^(Frame|Rectangle|Ellipse|Polygon|Star|Line|Vector|Group|Section|Component|Instance|Text)\s+(\d+)$/i))translated=`${generatedLayerMap[match[1].toLowerCase()]} ${match[2]}`;
     else if(match=normalized.match(/^Page\s+(\d+)$/i))translated=`页面 ${match[1]}`;
     else if(match=normalized.match(/^Grid\s+(\d+(?:\.\d+)?(?:px|pt)?)$/i))translated=`网格 ${match[1]}`;
   }
@@ -1802,6 +2124,11 @@ function translateMixedTextNode(node){
   return true;
 }
 function translateTextNode(node){
+  if(isVariableUserNameContext(node.parentElement)||isComponentVariantValueContext(node.parentElement))return;
+  if(translateLockedTeamBanner(node))return;
+  if(translatePurchaseConsent(node))return;
+  if(translateMoveEditAccess(node))return;
+  if(translateRoleRequestBanner(node))return;
   if(translateContextFragments(node))return;
   if(translateConnectedTeamFragments(node))return;
   if(translateMixedTextNode(node))return;

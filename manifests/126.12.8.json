@@ -1,0 +1,14 @@
+{
+  "figmaVersion": "126.12.8",
+  "translationVersion": "126.12.8-cn.1",
+  "dictionaryEntries": 25115,
+  "loaderModule": "fg01",
+  "bootstrap": "require(\"fg01\");",
+  "platforms": {
+    "macos-x64": "tested",
+    "macos-arm64": "preview",
+    "windows-x64": "preview",
+    "windows-arm64": "preview"
+  },
+  "notes": "适配 Figma 126.12.8，主词典累计 25,115 条。补齐结账与自动续订、邀请奖励、代码图层、动画、着色器、3D 变换、规格文档及「保存堆快照」等界面文案。变量分组路径、组件变体选项和图层名称按原名显示，付款地区字段按地址含义翻译，颜色数量提示保留实际数字。macOS Intel 已在 Figma 126.12.8 验证安装、应用签名和启动。macOS Apple Silicon、Windows x64 与 Windows ARM64 构建标为预览，待实机验证。"
+}

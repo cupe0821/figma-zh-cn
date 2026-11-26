@@ -62,6 +62,17 @@ test("输入框占位提示翻译为中文而用户输入保持原样", () => {
   assert.equal(context.lookupForTest("My custom query", input, "placeholder"), undefined);
 });
 
+test("查看全部颜色时完整翻译数字和颜色类型", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify(dictionary)+";").replace("function start(){", "globalThis.lookupForTest=lookup;\nfunction start(){"), context);
+  const lookup = context.lookupForTest;
+  assert.equal(lookup("See all 119 colors"), "查看全部 119 种颜色");
+  assert.equal(lookup("查看全部 119 colors"), "查看全部 119 种颜色");
+  assert.equal(lookup("See all 1 color"), "查看全部 1 种颜色");
+  assert.equal(lookup("See all 1,234 library colors"), "查看全部 1,234 种组件库颜色");
+  assert.equal(lookup("See all Design resources"), "查看全部 Design resources");
+});
+
 test("活动日志动态文案保留参数且不修改用户输入", () => {
   const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1 } });
   vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify(dictionary)+";").replace("function start(){", "globalThis.lookupForTest=lookup;\nfunction start(){"), context);
@@ -854,7 +865,7 @@ test("专业名词与代码内容的保护规则仍存在", () => {
   assert.match(runtime, /if\(autoLayoutSettingsOption\)return leading\+autoLayoutSettingsOption\+trailing/);
   assert.equal(dictionary.Updated, "更新时间");
   assert.match(runtime, /function isEditableTextContext/);
-  assert.match(runtime, /if\(isEditableTextContext\(element\)&&attributeName!=='placeholder'\)return undefined/);
+  assert.match(runtime, /if\(isEditableTextContext\(element\)&&attributeName!=='placeholder'&&attributeName!=='data-figspec-placeholder'&&!isFigspecPlaceholderContext\(element\)\)return undefined/);
   assert.match(runtime, /name!=='data-tooltip'\|\|element\?\.getAttribute\?\.\('data-tooltip-type'\)!=='lookup'/);
   assert.doesNotMatch(runtime, /value\.trim\(\)==='Style'&&translated\.trim\(\)==='样式'/);
   assert.match(runtime, /compactTooltipSourceLabels=new Set\(\['Create component','Visual search'\]\)/);
@@ -867,7 +878,6 @@ test("专业名词与代码内容的保护规则仍存在", () => {
   assert.match(runtime, /oldLeft\+\(oldWidth-newWidth\)\/2/);
   assert.match(runtime, /text\.length<=220&&\(text\.includes\('quality'\)\|\|text\.includes\('质量'\)\)/);
   assert.match(runtime, /!shaderQuality&&!exportQuality/);
-  assert.match(runtime, /\^See all\\s\+\(\\d\+\)\\s\+colors/);
   assert.match(runtime, /\^Show\\s\+\(\\d\+\)\\s\+more lines/);
   assert.match(runtime, /\^Updating assets\\s\+\(\\d\+\)\\s\*/);
   assert.match(runtime, /\^Loading\\s\+\(\\d\+\)\\s\+pages\\s\+for\\s\+plugin/);
@@ -895,8 +905,6 @@ test("专业名词与代码内容的保护规则仍存在", () => {
   assert.match(runtime, /Reactivate your Professional plan before/);
   assert.ok(runtime.includes("normalized.match(/^Move\\s+([\\d,]+)\\s+Figma Design or Sites files?$/i)"));
   assert.ok(runtime.includes("normalized.match(/^Consolidate to\\s+([\\d,]+)\\s+folders?$/i)"));
-  assert.match(runtime, /function isPaymentDetailsContext/);
-  assert.match(runtime, /isPaymentDetailsContext\(element\)\)translated='州'/);
   assert.match(runtime, /localizeShortDate\(match\[1\]\)/);
   assert.match(runtime, /\^\(\[\\d,\]\+\)\\s\+files\?/);
 });
@@ -921,9 +929,68 @@ test("组件属性值保留用户手动命名", () => {
   assert.match(runtime, /shaderOnlyMap=.*"Hex":"六边形","Hexagon":"六边形","Hexagonal":"六边形"/);
 });
 
+test("切换组件变体时，选中值与展开选项都保留原名", () => {
+  const labelId = ":variant-label:";
+  const menuId = ":variant-list:";
+  const variantLabel = { matches: selector => selector === 'label[class*="prop_assignment_row--componentPropNameViewOnly--"]' };
+  const combo = { getAttribute: name => ({ role: "combobox", "aria-labelledby": labelId })[name] };
+  const menu = { getAttribute: name => ({ role: "listbox", id: menuId })[name] };
+  const context = vm.createContext({
+    document: {
+      readyState: "loading", addEventListener() {}, querySelectorAll: () => [],
+      getElementById: id => id === labelId ? variantLabel : null,
+      querySelector: selector => selector === '[aria-controls=":variant-list:"],[aria-owns=":variant-list:"]' ? combo : null,
+    },
+    Node: { ELEMENT_NODE: 1, TEXT_NODE: 3 },
+  });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;globalThis.translateTextForTest=translateTextNode;\nfunction start(){"), context);
+  const childOf = control => ({
+    nodeType: 1,
+    closest: selector => selector === '[role="combobox"],[role="listbox"]' ? control : null,
+  });
+  for (const parentElement of [childOf(combo), childOf(menu)]) {
+    for (const value of ["Zero", "One", "Default", "Disabled", "Mixed"]) {
+      const node = { nodeType: 3, nodeValue: value, parentElement };
+      context.translateTextForTest(node);
+      assert.equal(node.nodeValue, value);
+      assert.equal(context.lookupForTest(value, parentElement, "aria-label"), undefined);
+    }
+  }
+  const unrelatedMenu = { getAttribute: name => ({ role: "listbox", id: ":ordinary-list:" })[name] };
+  assert.equal(context.lookupForTest("Zero", childOf(unrelatedMenu)), "零值");
+  assert.equal(context.lookupForTest("Current variant", childOf(null)), "当前变体");
+});
+
 test("原生标签页菜单使用固定与取消固定", () => {
   assert.equal(menuDictionary.Pin, "固定");
   assert.equal(menuDictionary.Unpin, "取消固定");
+});
+
+test("原生故障排除菜单及堆快照对话框使用中文", () => {
+  assert.equal(menuDictionary["Save Heap Snapshot…"], "保存堆快照…");
+  assert.equal(menuDictionary["Save Heap Snapshot"], "保存堆快照");
+  assert.equal(menuDictionary["When you click OK, you'll be prompted to choose where to save a snapshot of the app's memory; the app may be unresponsive during this process. Note that the snapshot file contains sensitive information and should be treated carefully."],
+    "点击“确定”后，您可以选择应用内存快照的保存位置。保存期间，应用可能暂时无响应。快照文件包含敏感信息，请妥善处理。");
+});
+
+test("邀请奖励弹窗和卡片完整翻译并保留名额与额度", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify(dictionary)+";").replace("function start(){", "globalThis.lookupForTest=lookup;\nfunction start(){"), context);
+  const cases = {
+    "Refer friends, get credits": "邀请好友，领取 AI 额度",
+    "Invite friends to Figma": "邀请好友加入 Figma",
+    "Up to 3,000 extra AI credits": "最多可获 3,000 点额外 AI 额度",
+    "Invite up to 3 collaborators to Figma. You’ll get 1,000 AI credits for each friend that creates a new account, and they each get 500 credits to build with, too!": "最多可邀请 3 位协作者加入 Figma。每有一位好友注册新账户，您就能获得 1,000 点 AI 额度，对方也能获得 500 点额度用于创作。",
+    "Invite up to 1 collaborator to Figma. You'll get 2,000 AI credits for each friend that creates a new account, and they each get 750 credits to build with, too!": "最多可邀请 1 位协作者加入 Figma。每有一位好友注册新账户，您就能获得 2,000 点 AI 额度，对方也能获得 750 点额度用于创作。",
+    "Invite collaborators to Figma. You’ll get 900 AI credits for each friend that creates a new account, and they each get 500 credits to build with, too!": "邀请协作者加入 Figma。每有一位好友注册新账户，您就能获得 900 点 AI 额度，对方也能获得 500 点额度用于创作。",
+    "Copy referral link": "复制邀请链接",
+    "Couldn’t copy link. Try again.": "无法复制链接，请重试。",
+    "Not interested? ": "不感兴趣？ ",
+    "Don’t show this again.": "不再显示。",
+    "Must be located in an eligible jurisdiction. Limits apply. ": "仅限符合条件的地区，且有相关限制。 ",
+    "View terms": "查看条款",
+  };
+  for (const [source, target] of Object.entries(cases)) assert.equal(context.lookupForTest(source), target, source);
 });
 
 test("排版与组件设置的重叠提示统一翻译", () => {
@@ -1042,7 +1109,7 @@ test("变量分组、变量名与集合名保留用户手动命名", () => {
   assert.match(runtime, /\[data-group-row-text\]/);
   assert.match(runtime, /\[class\*="variables_modal_table_group_name--"\]/);
   assert.match(runtime, /\[class\*="variable_name--name--"\]/);
-  assert.match(runtime, /if\(isVariableUserNameContext\(element\)\|\|isVariablePathSegmentNode\(node\)\|\|isStyleUserNameContext\(element\)\)return undefined;/);
+  assert.match(runtime, /if\(isVariableUserNameContext\(element\)\|\|isVariablePathSegmentNode\(node\)\|\|isStyleUserNameContext\(element\)\|\|isPageUserNameContext\(element,attributeName\)\)return undefined;/);
 });
 
 test("变量下拉选项中按 / 拆开的路径段保留用户命名", () => {
@@ -1060,6 +1127,27 @@ test("变量下拉选项中按 / 拆开的路径段保留用户命名", () => {
   assert.match(runtime, /\[data-tooltip-show-left\]\[data-tooltip-offset-x="-23"\]/);
 });
 
+test("新版变量表格保留整行分组路径，界面标签仍使用中文", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1, TEXT_NODE: 3 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;globalThis.translateTextForTest=translateTextNode;\nfunction start(){"), context);
+  const groupRowSelector = '[data-testid="variables-modal-table"] [class*="variables_spreadsheet--fullWidthRow--"][data-index]';
+  const groupRow = { nodeType: 1, tagName: "TR", className: "variables_spreadsheet--fullWidthRow--zaf0N" };
+  const groupSegment = { nodeType: 1, tagName: "DIV", closest: selector => selector.split(",").includes(groupRowSelector) ? groupRow : null };
+  const translate = (value, parentElement) => {
+    const node = { nodeType: 3, nodeValue: value, parentElement };
+    context.translateTextForTest(node);
+    return node.nodeValue;
+  };
+  // Separators are added by CSS, so none of the path segments has a "/" sibling.
+  for (const name of ["component", "toggle switch", "active", "inactive", "background", "icon", "username", "Fill", "Mixed"]) {
+    assert.equal(translate(name, groupSegment), name);
+    assert.equal(context.lookupForTest(name, groupSegment, "aria-label"), undefined);
+  }
+  for (const [label, expected] of Object.entries({ Name: "名称", Value: "值", "Create variable": "创建变量", Background: "背景" })) {
+    assert.equal(translate(label, { nodeType: 1, closest: () => null }), expected);
+  }
+});
+
 test("样式面板保留用户命名，变量右键菜单复数项完整翻译", () => {
   const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1, TEXT_NODE: 3 } });
   vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;\nfunction start(){"), context);
@@ -1075,4 +1163,668 @@ test("样式面板保留用户命名，变量右键菜单复数项完整翻译",
   assert.equal(dictionary["Duplicate variables"], "复制变量");
   assert.equal(context.lookupForTest("Edit variables"), "编辑变量");
   assert.equal(context.lookupForTest("Duplicate variables"), "复制变量");
+});
+
+test("锁定团队横幅被拆开的句子完整翻译，且不影响其他位置的 All", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1, TEXT_NODE: 3 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.translateLockedTeamBannerForTest=translateLockedTeamBanner;\nfunction start(){"), context);
+  const banner = { textContent: "All of this team’s work is currently view-only. You can edit again when the team is unlocked. Learn more", parentElement: null };
+  const translate = (value, parentElement = banner) => {
+    const node = { nodeType: 3, nodeValue: value, parentElement };
+    context.translateLockedTeamBannerForTest(node);
+    return node.nodeValue;
+  };
+  assert.equal(translate("All"), "此团队的所有内容");
+  assert.equal(translate(" of this team’s work is currently view-only. You can edit again when the team is unlocked. "), "目前仅可查看。团队解锁后即可恢复编辑。");
+  assert.equal(translate(" of this team's work is currently view-only. You can use Dev Mode again when the team is unlocked. "), "目前仅可查看。团队解锁后即可重新使用开发模式。");
+  const translatedBanner = { textContent: "此团队的所有内容目前仅可查看。团队解锁后即可恢复编辑。", parentElement: null };
+  assert.equal(translate("All", translatedBanner), "此团队的所有内容");
+  assert.equal(translate("All", { textContent: "All files", parentElement: null }), "All");
+  assert.equal(dictionary["All of this team’s work is currently view-only. You can edit again when the team is unlocked."], "此团队的所有内容目前仅可查看。团队解锁后即可恢复编辑。");
+  assert.equal(dictionary["All of this team’s work is currently view-only. You can use Dev Mode again when the team is unlocked. {learnMoreLink}"], "此团队的所有内容目前仅可查看。团队解锁后即可重新使用开发模式。{learnMoreLink}");
+});
+
+test("文本动画（交错）面板选项与提示完整翻译，且不改变全局含义", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1, TEXT_NODE: 3 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;\nfunction start(){"), context);
+  const element = ({ flyout = false, menuText = null } = {}) => ({
+    nodeType: 1, textContent: "", parentElement: null, classList: [], matches: () => false, getAttribute: () => null, hasAttribute: () => false,
+    closest(selector) {
+      if (selector === "[data-animation-preset-detail-flyout]") return flyout ? {} : null;
+      if (selector === '[role="listbox"],[role="menu"]') return menuText === null ? null : { textContent: menuText };
+      return null;
+    },
+  });
+  const inFlyout = element({ flyout: true });
+  for (const [source, target] of Object.entries({ In: "入场", Out: "退场", Word: "单词", Line: "行", Paragraph: "段落", Random: "随机", Each: "逐个", Overlap: "重叠", Character: "字符", "Center out": "从中心向外" })) {
+    assert.equal(context.lookupForTest(source, inFlyout), target, source);
+  }
+  assert.equal(context.lookupForTest("Word", element({ menuText: "Character Word Line Paragraph" })), "单词");
+  assert.equal(context.lookupForTest("Line", element({ menuText: "Character Word Line 段落" })), "行");
+  assert.equal(context.lookupForTest("Random", element({ menuText: "从左到右 从右到左 Center out Random" })), "随机");
+  assert.equal(context.lookupForTest("In", element({ menuText: "In 退场" })), "入场");
+  assert.equal(context.lookupForTest("In", element({ menuText: "In Out Everywhere Files" })), undefined);
+  assert.equal(context.lookupForTest("Line", element()), "直线");
+  assert.equal(context.lookupForTest("Word", element()), undefined);
+  assert.equal(context.lookupForTest("Position: Animation visibility", element()), "位置：动画可见性");
+  assert.equal(context.lookupForTest("Opacity: Remove animation", element()), "不透明度：移除动画");
+  assert.equal(dictionary["Character (ignore spaces)"], "字符（忽略空格）");
+  assert.equal(dictionary["Text stagger settings"], "文本交错设置");
+});
+
+test("动画预设属性面板的方向值 In 译为入场", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1, TEXT_NODE: 3 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;\nfunction start(){"), context);
+  const chain = (...texts) => {
+    let parentElement = null;
+    for (const textContent of texts.reverse()) parentElement = { nodeType: 1, textContent, parentElement, classList: [], matches: () => false, getAttribute: () => null, hasAttribute: () => false, closest: () => null };
+    return parentElement;
+  };
+  assert.equal(context.lookupForTest("In", chain("In", "In", "方向 In")), "入场");
+  assert.equal(context.lookupForTest("In", chain("In", "Direction In", "Panel Direction In Each Word")), "入场");
+  assert.equal(context.lookupForTest("In", chain("In", "方向 入场")), "入场");
+  assert.equal(context.lookupForTest("In", chain("In", "Search In Files")), undefined);
+  assert.equal(context.lookupForTest("Out", chain("Out", "方向 Out")), "退场");
+});
+
+test("动画选择器中的官方预设名、分组标题与速度标签按动效含义翻译", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1, TEXT_NODE: 3 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;\nfunction start(){"), context);
+  const element = (inPicker) => ({
+    nodeType: 1, textContent: "", parentElement: null, classList: [], matches: () => false, getAttribute: () => null, hasAttribute: () => false,
+    closest: selector => inPicker && selector === '[data-testid="animation-style-picker"]' ? {} : null,
+    querySelectorAll: () => [],
+  });
+  const picker = element(true);
+  const cases = {
+    "Text enter": "文本入场", "Text exit": "文本退场", Enter: "入场", Exit: "退场", Loop: "循环",
+    Fast: "快速", Medium: "中速", Slow: "慢速",
+    Slide: "滑动", Sweep: "横扫", Focus: "聚焦", Typewriter: "打字机", "Glitch Rise": "故障升起",
+    "Domino Glide": "多米诺滑行", "Random Rain": "随机雨落", "Snap zoom": "快速缩放", "Grand finale": "盛大谢幕",
+    Typequake: "文字震动", Scritto: "书写", "Pulse train": "脉冲串", Moonwalk: "太空步", Launch: "发射", Splat: "飞溅",
+  };
+  for (const [source, target] of Object.entries(cases)) assert.equal(context.lookupForTest(source, picker), target, source);
+  assert.equal(context.lookupForTest("Slide", element(false)), "幻灯片");
+  assert.equal(context.lookupForTest("Medium", element(false)), "中");
+  assert.equal(context.lookupForTest("Sweep", element(false)), "圆弧范围");
+});
+
+test("动画选择器的分类筛选菜单标题完整翻译", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1, TEXT_NODE: 3 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;\nfunction start(){"), context);
+  const inMenu = (menuText) => ({
+    nodeType: 1, textContent: "", parentElement: null, classList: [], matches: () => false, getAttribute: () => null, hasAttribute: () => false, querySelectorAll: () => [],
+    closest: selector => selector === '[role="listbox"],[role="menu"]' ? { textContent: menuText } : null,
+  });
+  const menu = inMenu("全部 Text enter Text exit 基础 Enter 循环 Exit");
+  for (const [source, target] of Object.entries({ "Text enter": "文本入场", "Text exit": "文本退场", Enter: "入场", Exit: "退场", Loop: "循环" })) {
+    assert.equal(context.lookupForTest(source, menu), target, source);
+  }
+  assert.equal(context.lookupForTest("Exit", inMenu("文本入场 文本退场 基础 入场 循环 Exit")), "退场");
+  assert.equal(context.lookupForTest("Slide", menu), "幻灯片");
+  assert.notEqual(context.lookupForTest("Enter", inMenu("Copy Paste Enter")), "入场");
+});
+
+test("工具栏新增的规格文档工具及其引导文案完整翻译", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;\nfunction start(){"), context);
+  const cases = {
+    "Spec": "规格文档",
+    "View here, edit there": "在此查看，到画布编辑",
+    "Layers can only be viewed in specs, but you can drag them onto the canvas to edit anytime.": "图层在规格文档中只能查看，但你可以随时将其拖到画布上进行编辑。",
+    "New Spec": "新建规格文档",
+  };
+  for (const [source, target] of Object.entries(cases)) assert.equal(context.lookupForTest(source), target, source);
+});
+
+test("规格文档编辑器占位提示与 AI 附件菜单完整翻译，且不翻译正文输入", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1, TEXT_NODE: 3 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;\nfunction start(){"), context);
+  const editable = { nodeType: 1, textContent: "", isContentEditable: true, parentElement: null, matches: selector => selector.includes("contenteditable"), closest: () => null, getAttribute: () => null, querySelectorAll: () => [] };
+  const make = ({ ariaHidden = false, nearImport = false, inImport = false } = {}) => ({
+    nodeType: 1, textContent: "", parentElement: { nodeType: 1, textContent: "", parentElement: editable, isContentEditable: true, matches: () => false, closest: () => null, getAttribute: () => null, querySelector: selector => nearImport && selector === "[data-figspec-markdown-import]" ? {} : null, querySelectorAll: () => [] },
+    isContentEditable: true, classList: [], matches: () => false, hasAttribute: () => false, querySelectorAll: () => [],
+    getAttribute: name => name === "aria-hidden" && ariaHidden ? "true" : null,
+    closest: selector => inImport && selector === "[data-figspec-markdown-import]" ? {} : null,
+  });
+  assert.equal(context.lookupForTest("Start typing, or import", make({ ariaHidden: true, nearImport: true })), "开始输入，或导入");
+  assert.equal(context.lookupForTest("Markdown file", make({ inImport: true })), "Markdown 文件");
+  assert.equal(context.lookupForTest("Untitled", editable, "data-figspec-placeholder"), "无标题");
+  assert.equal(context.lookupForTest("Heading 2", editable, "data-figspec-placeholder"), "二级标题");
+  assert.equal(context.lookupForTest("Untitled", make()), undefined, "正文中用户输入的文字不翻译");
+  assert.equal(context.lookupForTest("Heading 2", make({ ariaHidden: true })), undefined);
+  assert.equal(context.lookupForTest("Attach Figma files"), "附加 Figma 文件");
+  assert.equal(context.lookupForTest("Connectors"), "连接器");
+  assert.match(runtime, /'alt','data-figspec-placeholder'\]/);
+});
+
+test("代码图层的操作按钮和粘贴提示完整翻译", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;\nfunction start(){"), context);
+  assert.equal(context.lookupForTest("Pasting as a code layer isn’t available to you yet"), "你暂时还无法以代码图层形式粘贴");
+  assert.equal(context.lookupForTest("You can paste up to 10 code layers at a time. Copy fewer pages and try again."), "一次最多可粘贴 10 个代码图层。请减少复制的页面后重试。");
+  for (const ellipsis of ["...", "…"]) {
+    assert.equal(context.lookupForTest("Clone repository" + ellipsis), "克隆代码仓库…");
+    assert.equal(context.lookupForTest("Upload folder" + ellipsis), "上传文件夹…");
+  }
+  assert.equal(context.lookupForTest("Build selection"), "用代码实现所选内容");
+});
+
+test("Stripe 付款地址框保留 United States，State 字段显示为州／地区", () => {
+  const addressPath = "/v3/elements-inner-address-82ac715667da0d4bfc51f2cad5cb9ad1.html";
+  const context = vm.createContext({
+    document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] },
+    Node: { ELEMENT_NODE: 1, TEXT_NODE: 3 },
+    location: new URL("https://js.stripe.com" + addressPath),
+  });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;globalThis.translateTextForTest=translateTextNode;\nfunction start(){"), context);
+  const lookup = context.lookupForTest;
+  const select = { nodeType: 1, tagName: "SELECT", value: "US" };
+  const countryOption = { nodeType: 3, nodeValue: "United States", parentElement: { tagName: "OPTION", value: "US", parentElement: select } };
+  const stateLabel = { nodeType: 3, nodeValue: "State", parentElement: { tagName: "LABEL" } };
+  context.translateTextForTest(countryOption);
+  context.translateTextForTest(stateLabel);
+  assert.equal(countryOption.nodeValue, "United States");
+  assert.equal(select.value, "US");
+  assert.equal(stateLabel.nodeValue, "州／地区");
+  assert.equal(lookup("Country or region", select, "aria-label"), "国家或地区");
+  assert.equal(lookup("State", select, "aria-label"), "州／地区");
+  assert.equal(lookup("Alabama"), undefined);
+  context.location = new URL("https://js.stripe.com/v3/elements-inner-payment-9a1d.html");
+  assert.equal(lookup("United States"), "美国");
+  assert.equal(lookup("State"), "状态");
+  context.location = new URL("https://www.figma.com" + addressPath);
+  assert.equal(lookup("State", { nodeType: 3, parentElement: { textContent: "Update payment details Card number Billing address" } }), "州／地区");
+  assert.equal(lookup("State"), "状态");
+  assert.equal(lookup("United States"), "美国");
+});
+
+test("教育版结账页的方案标题与被链接拆开的续订同意条款完整翻译", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1, TEXT_NODE: 3 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;globalThis.translatePurchaseConsentForTest=translatePurchaseConsent;\nfunction start(){"), context);
+  assert.equal(context.lookupForTest("Cui。 - Education plan"), "Cui。 - 教育版");
+  const consent = { textContent: 'By clicking "Complete Purchase," I agree to Figma\'s 服务条款, 续订与取消条款, including that my Figma subscription will automatically renew every month and my payment method will be automatically charged unless and until I cancel or modify my plan in my Admin settings, and I acknowledge Figma\'s 隐私政策.', parentElement: null };
+  const translate = (value, parentElement = consent) => {
+    const node = { nodeType: 3, nodeValue: value, parentElement };
+    context.translatePurchaseConsentForTest(node);
+    return node.nodeValue;
+  };
+  const pieces = [
+    translate('By clicking "Complete Purchase," I agree to Figma\'s '), "服务条款", translate(", "), "续订与取消条款",
+    translate(", including that my Figma subscription will automatically renew every month and my payment method will be automatically charged unless and until I cancel or modify my plan in my Admin settings, and I acknowledge Figma's "),
+    "隐私政策", translate("."),
+  ];
+  const expected = dictionary['By clicking "Complete Purchase," I agree to Figma\'s {termsOfServicesLink}, {renewalAndCancellationLink}, including that my Figma subscription will automatically renew every month and my payment method will be automatically charged unless and until I cancel or modify my plan in my Admin settings, and I acknowledge Figma\'s {privacyLink}.']
+    .replace("{termsOfServicesLink}", "服务条款").replace("{renewalAndCancellationLink}", "续订与取消条款").replace("{privacyLink}", "隐私政策");
+  assert.equal(pieces.join(""), expected);
+  assert.match(translate(", including that my Figma subscription will automatically renew every 12 months and my payment method will be automatically charged unless and until I cancel or modify my plan in my Admin settings, and I acknowledge Figma's "), /每 12 个月自动续订/);
+  assert.equal(translate(", ", { textContent: "Frame 1, Frame 2", parentElement: null }), ", ");
+  assert.equal(translate(".", { textContent: "Saved.", parentElement: null }), ".");
+});
+
+test("付款页保留三个条款链接并翻译月度和年度自动续订说明", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1, TEXT_NODE: 3 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.translateTextForTest=translateTextNode;\nfunction start(){"), context);
+  for (const [period, translatedPeriod] of [["month", "每月"], ["12 months", "每 12 个月"]]) {
+    const renewal = ", including that my Figma subscription will automatically renew every " + period + " and my payment method will be automatically charged unless and until I cancel or modify my plan in my Admin settings.";
+    const pieces = ["I agree to Figma's ", "Terms of Service", ", ", "Privacy Policy", ", and ", "续订与取消条款", renewal];
+    const row = { get textContent() { return nodes.map(node => node.nodeValue).join(""); } };
+    const nodes = pieces.map(value => ({ nodeType: 3, nodeValue: value, parentElement: row }));
+    for (const index of [0, 2, 4, 6]) context.translateTextForTest(nodes[index]);
+    for (const index of [1, 3, 5]) assert.equal(nodes[index].nodeValue, pieces[index]);
+    for (const index of [1, 3, 5]) context.translateTextForTest(nodes[index]);
+    const template = "I agree to Figma's {termsOfServicesLink}, {privacyLink}, and {renewalAndCancellationLink}" + renewal;
+    assert.equal(row.textContent, dictionary[template].replace("{termsOfServicesLink}", "服务条款")
+      .replace("{privacyLink}", "隐私政策").replace("{renewalAndCancellationLink}", "续订与取消条款"));
+    assert.ok(row.textContent.includes(translatedPeriod + "自动续订"));
+  }
+});
+
+test("结账页翻译席位推荐和链接两侧的计费说明", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1, TEXT_NODE: 3 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.translateTextForTest=translateTextNode;\nfunction start(){"), context);
+  const translate = pieces => pieces.map(value => {
+    const node = { nodeType: 3, nodeValue: value };
+    context.translateTextForTest(node);
+    return node.nodeValue;
+  }).join("");
+  assert.equal(translate(["Seat types have been suggested based on previous Figma use. ", "Learn more about seats"]),
+    "系统已根据您此前使用 Figma 的情况推荐席位类型。 了解有关席位的更多信息");
+  assert.equal(translate([
+    "Seats you add or upgrade mid-subscription period will default to monthly at the ",
+    "monthly price",
+    ", but can be changed to annual at any time. These seats will be added to your next invoice and prorated to align with your billing period. ",
+    "Learn more",
+  ]), "订阅期间新增或升级的席位，默认按 月度价格计费，但可随时改为按年计费。费用将按当前计费周期的剩余时间折算，并计入下一张账单。 了解更多");
+});
+
+test("付款表单翻译保存信息和手机号码，并保留 Link 的条款链接", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1, TEXT_NODE: 3 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;globalThis.translateTextForTest=translateTextNode;\nfunction start(){"), context);
+  assert.equal(context.lookupForTest("Save my information for faster checkout"), "保存我的信息，以便更快结账");
+  assert.equal(context.lookupForTest("Mobile number"), "手机号码");
+  for (const apostrophe of ["’", "'"]) {
+    const prefix = "By selecting to save your info, you agree to create an account subject to Link" + apostrophe + "s ";
+    const values = ["• ", prefix, "Terms", " and ", "Privacy Policy", "."];
+    const notice = { get textContent() { return nodes.map(node => node.nodeValue).join(""); } };
+    const nodes = values.map(value => ({ nodeType: 3, nodeValue: value, parentElement: notice }));
+    for (const index of [1, 3, 5]) context.translateTextForTest(nodes[index]);
+    assert.equal(nodes[2].nodeValue, "Terms");
+    assert.equal(nodes[4].nodeValue, "Privacy Policy");
+    for (const index of [2, 4]) context.translateTextForTest(nodes[index]);
+    assert.equal(notice.textContent, "• 选择保存信息即表示您同意创建 Link 账户，并接受 Link 的条款和隐私政策。");
+  }
+  const period = { nodeType: 3, nodeValue: ".", parentElement: { textContent: "Saved." } };
+  context.translateTextForTest(period);
+  assert.equal(period.nodeValue, ".");
+});
+
+test("字体上传进度、上传结果与教育版席位额度说明完整翻译", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;\nfunction start(){"), context);
+  const cases = {
+    "Uploading 23 of 47 font files…": "正在上传字体文件（23/47）…",
+    "Uploading 23 of 47 font files...": "正在上传字体文件（23/47）…",
+    "Uploading 3/12 font files…": "正在上传字体文件（3/12）…",
+    "Font upload complete with 22 errors": "字体上传完成，出现 22 个错误",
+    "Font upload complete with 1 error": "字体上传完成，出现 1 个错误",
+    "Your seat in the Cui。 Education plan comes with 3,000 credits a month. Your seat credits reset Nov 1.": "您在 Cui。 教育版中的席位每月包含 3,000 点额度。您的席位额度将于 11月1日 重置。",
+    "Your seat in the Acme Education plan comes with 500 credits a month. Your seat credits reset at 9:00 AM.": "您在 Acme 教育版中的席位每月包含 500 点额度。您的席位额度将于 上午 9:00 重置。",
+  };
+  for (const [source, target] of Object.entries(cases)) assert.equal(context.lookupForTest(source), target, source);
+  assert.equal(context.lookupForTest("Uploading Marketing assets"), "正在上传 Marketing assets", "文件夹上传模板保持原样");
+});
+
+test("删除对话确认框完整翻译，对话标题保持原样", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;\nfunction start(){"), context);
+  assert.equal(context.lookupForTest("Delete chat?"), "删除对话？");
+  assert.equal(context.lookupForTest("Delete chat"), "删除对话");
+  assert.equal(context.lookupForTest('Are you sure you want to delete "Design next user screen"? This can’t be undone.'), "确定要删除“Design next user screen”吗？此操作无法撤销。");
+});
+
+test("文件浏览器多选右键菜单的数量文案完整翻译", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;\nfunction start(){"), context);
+  const cases = {
+    "Duplicate 3 files": "复制 3 个文件",
+    "Move 3 files": "移动 3 个文件",
+    "Trash 3 files": "将 3 个文件移到回收站",
+    "Remove 3 items from recent": "从最近使用中移除 3 项",
+    "Move 2 folders": "移动 2 个文件夹",
+    "Trash 2 folders": "将 2 个文件夹移到回收站",
+    "Move 5 items": "移动 5 个项目",
+    "Trash 5 items": "将 5 项移到回收站",
+    "Restore 4 files": "恢复 4 个文件",
+    "Restore 4 files to…": "将 4 个文件恢复到…",
+  };
+  for (const [source, target] of Object.entries(cases)) assert.equal(context.lookupForTest(source), target, source);
+  assert.equal(context.lookupForTest("Move to trash"), "移到回收站");
+  assert.equal(context.lookupForTest("Duplicate"), "创建副本");
+});
+
+test("移到回收站确认框的文件夹权限说明完整翻译", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1, TEXT_NODE: 3 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;\nfunction start(){"), context);
+  const dialog = { nodeType: 1, textContent: "将文件移到回收站 你即将把文件 配置器 移到回收站。 Anyone with edit access on the folder can restore it later from the 回收站 section.", parentElement: null, classList: [], matches: () => false, closest: () => null, getAttribute: () => null, hasAttribute: () => false, querySelectorAll: () => [] };
+  const span = { ...dialog, textContent: "Anyone with edit access on the folder can restore it later from the", parentElement: dialog };
+  const pieces = [
+    context.lookupForTest("Anyone with edit access on the folder can restore it later from the ", { ...span }),
+    "回收站",
+    context.lookupForTest(" section.", { ...dialog, textContent: " section.", parentElement: dialog }),
+  ];
+  assert.equal(pieces[0].trim(), "文件夹中任何拥有编辑权限的人都可以稍后从");
+  assert.equal(pieces[2].trim(), "中恢复该文件。");
+  assert.equal(context.lookupForTest("Anyone with edit access on the project can restore it later from the", span), "项目中任何拥有编辑权限的人都可以稍后从");
+});
+
+test("草稿移入文件夹的席位提示与文件移动通知完整翻译，团队名与文件夹名保持原样", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;\nfunction start(){"), context);
+  const cases = {
+    "Moving a draft to a folder will move you to a Full seat in Cui。.": "将草稿移至文件夹后，您将在 Cui。 中使用完整席位。",
+    "Moving a draft to a project will move you to a Dev seat in Acme.": "将草稿移至项目后，您将在 Acme 中使用开发席位。",
+    "File moved": "文件已移动",
+    "3 files moved": "3 个文件已移动",
+    "File moved to trash": "文件已移动到回收站",
+    "3 files moved to trash": "3 个文件已移动到回收站",
+    "Show in 奥迪": "在 奥迪 中显示",
+  };
+  for (const [source, target] of Object.entries(cases)) assert.equal(context.lookupForTest(source), target, source);
+});
+
+test("移动文件对话框的当前位置与编辑权限提示完整翻译，文件夹名保持原样", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1, TEXT_NODE: 3 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;globalThis.translateMoveEditAccessForTest=translateMoveEditAccess;\nfunction start(){"), context);
+  assert.equal(context.lookupForTest("Current location: "), "当前位置： ");
+  const paragraph = { textContent: "To move this file, you need to be granted edit access to 颜慧健 的文件夹. 了解更多", parentElement: null };
+  const translate = (value, parentElement = paragraph) => {
+    const node = { nodeType: 3, nodeValue: value, parentElement };
+    context.translateMoveEditAccessForTest(node);
+    return node.nodeValue;
+  };
+  const sentence = translate("To move this file, you need to be granted edit access to ") + "颜慧健 的文件夹" + translate(".");
+  assert.equal(sentence, "要移动此文件，您需要获得 颜慧健 的文件夹 的编辑权限。");
+  const translatedParagraph = { textContent: "要移动此文件，您需要获得 颜慧健 的文件夹. 了解更多", parentElement: null };
+  assert.equal(translate(".", translatedParagraph), " 的编辑权限。");
+  assert.equal(translate(".", { textContent: "Saved.", parentElement: null }), ".");
+});
+
+test("分享面板的文件夹成员行与所有者角色翻译准确", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;\nfunction start(){"), context);
+  assert.equal(context.lookupForTest("People from 奥迪"), "来自 奥迪 的人员");
+  assert.equal(context.lookupForTest("Owner"), "所有者");
+  assert.equal(context.lookupForTest("owner"), "所有者");
+  assert.equal(context.lookupForTest("Created by"), "创建者");
+  assert.equal(context.lookupForTest("People invited to file"), "此文件的受邀人员");
+});
+
+test("社区分类标签与排序按钮选中后的文字完整翻译", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;\nfunction start(){"), context);
+  const element = (inTags) => ({
+    nodeType: 1, textContent: "", parentElement: null, classList: [], matches: () => false, getAttribute: () => null, hasAttribute: () => false, querySelectorAll: () => [],
+    closest: selector => inTags && selector === '[class*="category_links_container--"]' ? {} : null,
+  });
+  const tags = element(true);
+  const cases = { Travel: "旅行", Event: "活动", Simple: "简约", "User profile": "用户资料", "Real estate": "房地产", Navbar: "导航栏", Chatbot: "聊天机器人", "Personal website": "个人网站", Marketplace: "交易市场", "E-learning": "在线学习", Login: "登录", Dashboards: "仪表板", Wedding: "婚礼", Blog: "博客" };
+  for (const [source, target] of Object.entries(cases)) assert.equal(context.lookupForTest(source, tags), target, source);
+  assert.equal(context.lookupForTest("Travel", element(false)), "位移");
+  assert.equal(context.lookupForTest("Event", element(false)), "事件");
+  assert.equal(context.lookupForTest("Sort: Popular"), "排序：流行");
+  assert.equal(context.lookupForTest("Sort: Recent"), "排序：最近");
+  assert.equal(context.lookupForTest("Sort: Something new"), "排序：Something new");
+});
+
+test("模板分类标签行按内容识别，选中标签时仍能翻译", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;\nfunction start(){"), context);
+  const base = { nodeType: 1, classList: [], matches: () => false, getAttribute: () => null, hasAttribute: () => false, querySelectorAll: () => [], closest: () => null };
+  const row = { ...base, childElementCount: 28, parentElement: null, textContent: "婚礼 CMS 侧边栏 User profile 摄影 CRM 关于我们 Real estate 注册 Navbar Chatbot 事件 Personal website 商业 室内设计 SaaS 简单 落地页 餐厅 作品集 电子商务 时尚 博客 位移 菜单 Marketplace E-learning Login Dashboards" };
+  const chip = (text) => ({ ...base, childElementCount: 0, textContent: text, parentElement: { ...base, childElementCount: 1, textContent: text, parentElement: row } });
+  for (const [source, target] of Object.entries({ Travel: "旅行", Event: "活动", Simple: "简约", "User profile": "用户资料", Navbar: "导航栏", Dashboards: "仪表板", Login: "登录" })) {
+    assert.equal(context.lookupForTest(source, chip(source)), target, source);
+  }
+  const toolbar = { ...base, childElementCount: 8, parentElement: null, textContent: "Move Frame Rectangle Pen Text Comment Travel Event" };
+  const toolChip = { ...base, childElementCount: 0, textContent: "Travel", parentElement: toolbar };
+  assert.equal(context.lookupForTest("Travel", toolChip), "位移");
+});
+
+test("文件夹权限面板的标题与继承权限说明完整翻译，文件夹名保持原样", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1, TEXT_NODE: 3 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;globalThis.translateSplitForTest=translateMoveEditAccess;\nfunction start(){"), context);
+  assert.equal(context.lookupForTest("Permissions from folder 奥迪"), "来自文件夹 奥迪 的权限");
+  assert.equal(context.lookupForTest("Permissions from team Cui。"), "来自团队 Cui。 的权限");
+  const translate = (value, textContent) => {
+    const node = { nodeType: 3, nodeValue: value, parentElement: { textContent, parentElement: null } };
+    context.translateSplitForTest(node);
+    return node.nodeValue;
+  };
+  const body = "People can access this file because they have access to 奥迪. 了解更多关于文件夹权限的信息。";
+  assert.equal(translate("People can access this file because they have access to ", body) + "奥迪" + translate(".", body), "人员可以访问此文件，因为他们拥有 奥迪 的访问权限。");
+  assert.equal(translate("Permissions from folder ", "Permissions from folder 奥迪") + "奥迪", "文件夹权限：奥迪");
+  const moveBody = "To move this file, you need to be granted edit access to 颜慧健 的文件夹. 了解更多";
+  assert.equal(translate(".", moveBody), " 的编辑权限。");
+  assert.equal(translate(".", "Saved."), ".");
+});
+
+test("访问请求横幅中被加粗姓名拆开的句子完整翻译", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1, TEXT_NODE: 3 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;globalThis.translateRoleRequestForTest=translateRoleRequestBanner;\nfunction start(){"), context);
+  const translate = (value, textContent) => {
+    const node = { nodeType: 3, nodeValue: value, parentElement: { textContent, parentElement: null } };
+    context.translateRoleRequestForTest(node);
+    return node.nodeValue;
+  };
+  const banner = "Chenming Wang 和 1 other person are asking to view";
+  assert.equal("Chenming Wang" + " 和 " + translate("1 other person", banner) + translate(" are asking to view", banner), "Chenming Wang 和 另外 1 人 请求查看");
+  assert.equal(translate("3 others", "Ann and 3 others are asking to edit"), "另外 3 人");
+  assert.equal(translate(" are asking to edit", "Ann and 3 others are asking to edit"), " 请求编辑");
+  assert.equal(translate("3 others", "Shared with you and 3 others"), "3 others");
+});
+
+test("页面列表中的页面名与分隔标题保留用户命名", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;\nfunction start(){"), context);
+  const element = (pageName) => ({
+    nodeType: 1, textContent: "", parentElement: null, classList: [], matches: () => false, getAttribute: () => null, hasAttribute: () => false, querySelectorAll: () => [],
+    closest: selector => pageName && selector.includes("renameableNodeText--") && selector.includes("pageDividerTitle") ? {} : null,
+  });
+  for (const name of ["motion", "Motion", "Cover", "Components", "Icons", "Archive"]) {
+    assert.equal(context.lookupForTest(name, element(true)), undefined, name);
+  }
+  assert.equal(context.lookupForTest("Ready for dev", element(true), "data-tooltip") !== undefined, true, "提示文字仍可翻译");
+  assert.equal(context.lookupForTest("Motion", element(false)), "动画");
+});
+
+test("图层面板中的图层名（含默认名称）保留原文", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;\nfunction start(){"), context);
+  const element = (layerRow) => ({
+    nodeType: 1, textContent: "", parentElement: null, classList: [], matches: () => false, getAttribute: () => null, hasAttribute: () => false, querySelectorAll: () => [],
+    closest: selector => layerRow && selector.includes('[class*="object_row--rowText--"]') ? {} : null,
+  });
+  for (const name of ["motion", "Frame 2", "Frame 16109", "Rectangle 3", "Group 1", "Text", "Button"]) {
+    assert.equal(context.lookupForTest(name, element(true)), undefined, name);
+  }
+  assert.equal(context.lookupForTest("Frame 2", element(false)), undefined, "默认图层名在任何位置都保留原文");
+  assert.equal(context.lookupForTest("Rectangle 3", element(false)), undefined);
+  assert.equal(context.lookupForTest("Motion", element(false)), "动画");
+});
+
+test("新版图层面板行（layers-panel-row）中的图层名保留原文", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;\nfunction start(){"), context);
+  const row = { nodeType: 1, textContent: "", parentElement: null, classList: [], matches: () => false, getAttribute: () => null, hasAttribute: () => false, querySelectorAll: () => [],
+    closest: selector => selector.includes('[data-testid$="-layers-panel-row"]') ? {} : null };
+  for (const name of ["motion", "Frame 2", "Group 1", "Button", "Cover"]) assert.equal(context.lookupForTest(name, row), undefined, name);
+  assert.match(runtime, /\[data-testid\$="-layers-panel-row"\]/);
+  assert.doesNotMatch(runtime, /generatedLayerMap/);
+});
+
+test("字体样式下拉框选中后的字重名称保持原文", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;\nfunction start(){"), context);
+  const base = { nodeType: 1, classList: [], matches: () => false, getAttribute: () => null, hasAttribute: () => false, querySelectorAll: () => [], closest: () => null };
+  const trigger = (label, value) => {
+    const button = { ...base, textContent: `${label}${value}`, parentElement: { ...base, textContent: `Audi Type ${label}${value} 16`, parentElement: null } };
+    return { ...base, textContent: value, parentElement: button };
+  };
+  for (const weight of ["Normal", "Bold", "Medium", "Regular", "Light"]) {
+    assert.equal(context.lookupForTest(weight, trigger("Font style", weight)), undefined, weight);
+    assert.equal(context.lookupForTest(weight, trigger("字体样式", weight)), undefined, weight);
+  }
+  assert.equal(context.lookupForTest("Normal", { ...base, textContent: "Normal", parentElement: null }), "正常", "其他位置的 Normal 照常翻译");
+});
+
+test("字体样式下拉框通过关联标签识别，优先于混合模式等规则", () => {
+  const labelEl = { textContent: "字体样式" };
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [], getElementById: id => id === "lbl-1" ? labelEl : null }, Node: { ELEMENT_NODE: 1 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;\nfunction start(){"), context);
+  const base = { nodeType: 1, classList: [], matches: () => false, getAttribute: () => null, hasAttribute: () => false, querySelectorAll: () => [] };
+  const make = (button) => ({ ...base, textContent: "Normal", parentElement: { ...base, textContent: "Normal", parentElement: null }, closest: sel => sel === 'button,[role="combobox"]' ? button : (sel.includes("blend mode") ? {} : null) });
+  const viaLabels = { ...base, labels: [{ textContent: "Font style" }] };
+  const viaAria = { ...base, labels: [], getAttribute: name => name === "aria-labelledby" ? "lbl-1" : null };
+  assert.equal(context.lookupForTest("Normal", make(viaLabels)), undefined, "button.labels 关联");
+  assert.equal(context.lookupForTest("Bold", make(viaAria)), undefined, "aria-labelledby 关联");
+  const blendButton = { ...base, labels: [{ textContent: "Blend mode" }] };
+  assert.equal(context.lookupForTest("Normal", make(blendButton)), "正常", "混合模式中的 Normal 仍翻译");
+});
+
+test("创建团队页的方案说明与被链接拆开的同意条款完整翻译", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1, TEXT_NODE: 3 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;globalThis.translateSplitForTest=translateMoveEditAccess;\nfunction start(){"), context);
+  assert.equal(context.lookupForTest("This team won't be a part of your existing plans."), "此团队不会包含在您现有的方案中。");
+  const consent = 'By clicking "Create team", you agree to the Figma 服务条款 and acknowledge the 隐私政策.';
+  const translate = (value) => {
+    const node = { nodeType: 3, nodeValue: value, parentElement: { textContent: consent, parentElement: null } };
+    context.translateSplitForTest(node);
+    return node.nodeValue;
+  };
+  const sentence = translate('By clicking "Create team", you agree to the ') + "Figma 服务条款" + translate(" and acknowledge the ") + "隐私政策" + translate(".");
+  assert.equal(sentence, "点击“创建团队”即表示您同意Figma 服务条款并确认隐私政策。");
+});
+
+test("账户切换菜单与方案徽标翻译准确一致", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;\nfunction start(){"), context);
+  const cases = {
+    "Switch plan": "切换方案", "New plan": "新建方案", "Edu": "教育版", "Pro": "专业版", "Professional": "专业版",
+    "Switch account": "切换账号", "Current account": "当前账号", "Log out": "退出登录",
+    "Plan: Cui。": "方案：Cui。",
+    "Change plan. Cui。 currently on Free plan": "更改方案。Cui。 当前使用免费版",
+    "Change plan. Cui。 is currently on the Professional plan": "更改方案。Cui。 当前使用专业版",
+    "Change plan. Cui。 is currently locked": "更改方案。Cui。 当前已锁定",
+  };
+  for (const [source, target] of Object.entries(cases)) assert.equal(context.lookupForTest(source), target, source);
+});
+
+test("文件筛选中的全部方案不被组织名模板误匹配", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;\nfunction start(){"), context);
+  assert.equal(context.lookupForTest("All plans"), "全部方案");
+  assert.equal(context.lookupForTest("All Acme"), "全部 Acme", "组织名模板保持原样");
+});
+
+test("iPhone 18 Pro 与 iPhone Duo 新机型颜色完整翻译", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;\nfunction start(){"), context);
+  for (const [source, target] of Object.entries({ Burgundy: "酒红色", Glacier: "冰川蓝色", Silver: "银色", "Night Sky": "夜空色", "Star White": "星辰白色" })) {
+    assert.equal(context.lookupForTest(source), target, source);
+  }
+  const base = { nodeType: 1, classList: [], matches: () => false, getAttribute: () => null, hasAttribute: () => false, querySelectorAll: () => [], closest: () => null };
+  const menu = { ...base, textContent: "Black Burgundy Glacier Silver", parentElement: null };
+  assert.equal(context.lookupForTest("Black", { ...base, textContent: "Black", parentElement: menu }), "黑色");
+  assert.match(runtime, /\['burgundy','酒红色'\],\['glacier','冰川蓝色'\]/);
+});
+
+test("打开 Motion 时间轴按钮不被文件夹名模板误匹配，Motion 保持英文", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;\nfunction start(){"), context);
+  assert.equal(context.lookupForTest("Open Motion timeline"), "打开 Motion 时间轴");
+  assert.equal(context.lookupForTest("Open timeline"), "打开时间轴");
+  assert.equal(context.lookupForTest("Open Marketing"), "打开 Marketing", "文件夹名模板保持原样");
+});
+
+test("动画自定义标签页的分类筛选菜单（无文本分类）完整翻译", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;\nfunction start(){"), context);
+  const inMenu = (menuText) => ({
+    nodeType: 1, textContent: "", parentElement: null, classList: [], matches: () => false, getAttribute: () => null, hasAttribute: () => false, querySelectorAll: () => [],
+    closest: selector => selector === '[role="listbox"],[role="menu"]' ? { textContent: menuText } : null,
+  });
+  const menu = inMenu("全部 基础 Enter 循环 Exit");
+  assert.equal(context.lookupForTest("Enter", menu), "入场");
+  assert.equal(context.lookupForTest("Exit", menu), "退场");
+  assert.equal(context.lookupForTest("Exit", inMenu("全部 基础 入场 循环 Exit")), "退场");
+  assert.equal(context.lookupForTest("Basic", menu), "基础");
+  assert.notEqual(context.lookupForTest("Enter", inMenu("Copy Paste Enter")), "入场");
+  assert.notEqual(context.lookupForTest("Exit", inMenu("File Edit Exit")), "退场");
+});
+
+test("动画分类菜单逐项插入时 Enter 仍能翻译", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;\nfunction start(){"), context);
+  const inMenu = (menuText) => ({
+    nodeType: 1, textContent: "", parentElement: null, classList: [], matches: () => false, getAttribute: () => null, hasAttribute: () => false, querySelectorAll: () => [],
+    closest: selector => selector === '[role="listbox"],[role="menu"]' ? { textContent: menuText } : null,
+  });
+  assert.equal(context.lookupForTest("Enter", inMenu("全部 基础 Enter")), "入场", "后续选项尚未插入时");
+  assert.equal(context.lookupForTest("Enter", inMenu("全部 Basic Enter")), "入场");
+  assert.notEqual(context.lookupForTest("Enter", inMenu("Copy Paste Enter")), "入场");
+});
+
+test("动画选择器中 Spin 与基础动画 Rotation 译名不重复", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;\nfunction start(){"), context);
+  const picker = { nodeType: 1, textContent: "", parentElement: null, classList: [], matches: () => false, getAttribute: () => null, hasAttribute: () => false, querySelectorAll: () => [],
+    closest: selector => selector === '[data-testid="animation-style-picker"]' ? {} : null };
+  assert.equal(context.lookupForTest("Spin", picker), "自转");
+  assert.equal(context.lookupForTest("Rotation", picker), "旋转");
+  assert.notEqual(context.lookupForTest("Spin", picker), context.lookupForTest("Rotation", picker));
+});
+
+test("动画选择器中 Pop、Recede、Slam 按动效含义翻译", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;\nfunction start(){"), context);
+  const picker = { nodeType: 1, textContent: "", parentElement: null, classList: [], matches: () => false, getAttribute: () => null, hasAttribute: () => false, querySelectorAll: () => [],
+    closest: selector => selector === '[data-testid="animation-style-picker"]' ? {} : null };
+  assert.equal(context.lookupForTest("Pop", picker), "跳动");
+  assert.equal(context.lookupForTest("Recede", picker), "远去");
+  assert.equal(context.lookupForTest("Slam", picker), "猛落");
+});
+
+test("着色器面板新增预设名称完整翻译", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;\nfunction start(){"), context);
+  for (const [source, target] of Object.entries({ "CRT screen": "CRT 屏幕", "Moving blobs": "流动色块", "Shape-based particles": "基于形状的粒子", "Color adjust": "色彩调整", "Pixel stretch": "像素拉伸", "Gooey merge": "黏液融合", "Duotone filter": "双色调滤镜", "Light rays": "光束", "Glowing particles": "发光粒子" })) {
+    assert.equal(context.lookupForTest(source), target, source);
+  }
+});
+
+test("着色器参数面板（发光粒子、双色调、切片移位、变形、CRT 屏幕）完整翻译", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;\nfunction start(){"), context);
+  const cases = { "Particle size": "粒子大小", "Glow color": "发光颜色", "Size variation": "大小变化", "Scatter radius": "散布半径", "Midpoint": "中点", "Mix": "混合", "Random offset": "随机偏移", "Warp type": "变形类型", "Mask size": "蒙版大小", "Curvature": "曲率", "Clip to curve": "按曲面裁剪", "Scanlines": "扫描线", "Scanline size": "扫描线大小", "Dispersion type": "色散类型", "Flicker": "闪烁", "Static size": "噪点大小", "Roll speed": "滚动速度", "Aperture grille": "栅状荫罩" };
+  for (const [source, target] of Object.entries(cases)) assert.equal(context.lookupForTest(source), target, source);
+  const shader = { nodeType: 1, textContent: "", parentElement: null, classList: [], matches: () => false, getAttribute: () => null, hasAttribute: () => false, querySelectorAll: () => [],
+    closest: selector => selector.includes("custom-paint-prop-editor") ? {} : null };
+  assert.equal(context.lookupForTest("Static", shader), "雪花噪点");
+  assert.equal(context.lookupForTest("Static"), "静态", "着色器以外仍为静态");
+});
+
+test("着色器形状下拉菜单中的六边形在弹出菜单里也能翻译，Hex 颜色值不受影响", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;\nfunction start(){"), context);
+  const inMenu = (menuText) => ({ nodeType: 1, textContent: "", parentElement: null, classList: [], matches: () => false, getAttribute: () => null, hasAttribute: () => false, querySelectorAll: () => [],
+    closest: selector => selector === '[role="listbox"],[role="menu"]' ? { textContent: menuText } : null });
+  assert.equal(context.lookupForTest("Hexagon", inMenu("矩形 椭圆 Hexagon 三角形")), "六边形");
+  assert.equal(context.lookupForTest("Hexagon", inMenu("Rectangle Ellipse Hexagon")), "六边形");
+  assert.equal(context.lookupForTest("Hexagon"), undefined, "组件属性等用户命名不翻译");
+  assert.equal(context.lookupForTest("Hexagon", inMenu("Square Hexagon Star")), undefined, "其他菜单不翻译");
+});
+
+test("3D 变换与透视新功能文案完整翻译", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;\nfunction start(){"), context);
+  const cases = {
+    "Origin point": "原点", "X rotation": "X 轴旋转", "Y rotation": "Y 轴旋转", "Z rotation": "Z 轴旋转", "Depth": "深度",
+    "Transform effects": "变换效果", "Perspective": "透视", "3D transform": "3D 变换", "3D space": "3D 空间",
+    "Keep nested layers 3D": "让嵌套图层保持 3D", "Fix perspective": "修复透视", "Backface": "背面可见",
+    "Fixed perspective on 1 layer": "已修复 1 个图层的透视", "Fixed perspective on 12 layers": "已修复 12 个图层的透视",
+  };
+  for (const [source, target] of Object.entries(cases)) assert.equal(context.lookupForTest(source), target, source);
+});
+
+test("团队锁定卡片中被链接拆开的解锁说明与新增文案完整翻译", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1, TEXT_NODE: 3 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.lookupForTest=lookup;globalThis.translateSplitForTest=translateMoveEditAccess;\nfunction start(){"), context);
+  const card = "Your team is over Starter plan limits. To unlock, 重新验证您的教育资格, 升级到专业版套餐, or move some work.";
+  const translate = (value) => {
+    const node = { nodeType: 3, nodeValue: value, parentElement: { textContent: card, parentElement: null } };
+    context.translateSplitForTest(node);
+    return node.nodeValue;
+  };
+  const sentence = translate("Your team is over Starter plan limits. To unlock, ") + "重新验证您的教育资格" + translate(", ") + "升级到专业版套餐" + translate(", or move some work.");
+  assert.equal(sentence, "您的团队已超出入门版套餐限制。要解锁，请重新验证您的教育资格、升级到专业版套餐，或移动部分内容。");
+  assert.equal(context.lookupForTest("Verify your education status"), "验证您的教育资格");
+  assert.equal(context.lookupForTest("Move 3 Figma Specs files"), "移动 3 个 Figma Specs 文件");
+  assert.equal(context.lookupForTest("Move 1 Figma Specs file"), "移动 1 个 Figma Specs 文件");
+});
+
+test("共享受限提示中被邮箱链接拆开的句子完整翻译，邮箱保持原样", () => {
+  const context = vm.createContext({ document: { readyState: "loading", addEventListener() {}, querySelectorAll: () => [] }, Node: { ELEMENT_NODE: 1, TEXT_NODE: 3 } });
+  vm.runInContext(runtime.replace("const map={};", "const map="+JSON.stringify({...dictionary, ...menuDictionary})+";").replace("function start(){", "globalThis.translateSplitForTest=translateMoveEditAccess;\nfunction start(){"), context);
+  const translate = (value, textContent) => {
+    const node = { nodeType: 3, nodeValue: value, parentElement: { textContent, parentElement: null } };
+    context.translateSplitForTest(node);
+    return node.nodeValue;
+  };
+  const email = "support+restricted@figma.com";
+  const file = `Figma has restricted you from sharing this file. Please email ${email} for help.`;
+  assert.equal(translate("Figma has restricted you from sharing this file. Please email ", file) + email + translate(" for help.", file), `Figma 已限制您共享此文件。如需帮助，请发送邮件至 ${email}。`);
+  const team = `Figma has restricted you from sending invites for this team. Please email ${email} for help.`;
+  assert.equal(translate("Figma has restricted you from sending invites for this team. Please email ", team), "Figma 已限制您为此团队发送邀请。如需帮助，请发送邮件至 ");
+  assert.equal(translate(" for help.", "Contact us for help."), " for help.");
 });
